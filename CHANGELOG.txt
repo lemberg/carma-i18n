@@ -1,5 +1,10 @@
 4-5-0 to .....
 --------------
+26/03/2005
+- Backported some bugfixes from HEAD
+- Added some language flags
+- Added PostgreSQL schema
+
 04/01/2004
 - Now language icons are not displayed with teasers
 - Fixed http://drupal.org/node/15062 (Inconsistent i18n_front_page vs. i18n_frontpage)
