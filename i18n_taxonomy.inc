@@ -253,7 +253,7 @@ function i18n_term_get_translations($tid, $getall = false) {
     $result = db_query($sql, $tid);
   }
   else {
-    $result = db_query($sql. ' and a.tid != %d', $tid);
+    $result = db_query($sql. ' and a.tid != %d', $tid , $tid);
   }
   while ($data = db_fetch_object($result)) {
     $list[$data->language] = $data;
