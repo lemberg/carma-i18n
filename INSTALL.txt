@@ -37,7 +37,9 @@ Language Definition
 You can use the languages defined -and enabled- in 'locale' module or modify the Drupal configuration file 'includes/conf.php' to define the languages you want to use.  
   For instance, for English and Spanish:
     
-   $i18n_languages = array("es" => "spanish", "en" => "english");
+   $i18n_languages = array("es" => "espa&ntilde;ol", "en" => "english");
+
+* You have to define languages using the native name, also in the locale module. This is the name that will show up in the block.
 
 Add any flag icons beyond the ones provided by placing them in 'modules/i18n/flags'.  
   You can get more flag icons from: http://www.clickfire.com/content/graphics/favicons/flags_icons.php  
