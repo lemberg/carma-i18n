@@ -1,10 +1,7 @@
-Index: bootstrap.inc
+Index: D:/Proyectos/MyDrupal/includes/bootstrap.inc
 ===================================================================
-RCS file: /cvs/drupal/drupal/includes/bootstrap.inc,v
-retrieving revision 1.44
-diff -u -r1.44 bootstrap.inc
---- bootstrap.inc	5 Apr 2005 19:00:24 -0000	1.44
-+++ bootstrap.inc	3 May 2005 10:27:54 -0000
+--- D:/Proyectos/MyDrupal/includes/bootstrap.inc	(revision 111)
++++ D:/Proyectos/MyDrupal/includes/bootstrap.inc	(working copy)
 @@ -152,6 +152,9 @@
  function variable_get($name, $default) {
    global $conf;
@@ -176,13 +173,10 @@ diff -u -r1.44 bootstrap.inc
  unset($conf);
  $config = conf_init();
  
-Index: common.inc
+Index: D:/Proyectos/MyDrupal/includes/common.inc
 ===================================================================
-RCS file: /cvs/drupal/drupal/includes/common.inc,v
-retrieving revision 1.434.2.3
-diff -u -r1.434.2.3 common.inc
---- common.inc	11 Apr 2005 22:50:41 -0000	1.434.2.3
-+++ common.inc	3 May 2005 10:27:58 -0000
+--- D:/Proyectos/MyDrupal/includes/common.inc	(revision 111)
++++ D:/Proyectos/MyDrupal/includes/common.inc	(working copy)
 @@ -134,70 +134,6 @@
  }
  

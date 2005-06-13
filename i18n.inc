@@ -31,9 +31,12 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
 }
 
 function i18n_db_node_rewrite($query, $primary_table, $primary_key){
+  // When loading specific nodes, language conditions shouldn't apply
+  if(arg(0) == 'node' && is_numeric(arg(1))) return;
   $alias = $primary_key{0};
-  if ($primary_table != 'n') {
+  if ($primary_table != 'n' || !strstr($query, '{node}')) {
     $result['join'] = 'INNER JOIN {node} n USING (nid)';
+    $alias = n;
   } 
   $result['where'] = $alias .".language ='".i18n_get_lang()."' or ". $alias .".language = ''" ;
 

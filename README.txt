@@ -2,7 +2,7 @@ README.txt
 ==========
 
 ********************************************************************
-  This is i18n module, version 4.6, and works with Drupal 4.6.0
+  This is i18n module, version 4.6, and works with Drupal 4.6.x
 ********************************************************************
 WARNING: It is not 100% backwards compatible with the old i18n module [4.5.x] 
 WARNING: DO READ THE INSTALL FILE
@@ -48,19 +48,6 @@ You can create vocabularies and terms with or without language.
 - If you set language for a vocabulary/term, that term will just show up for pages in that language
 - If you set language for a vocabulary, all the terms in that vocabulary will be assigned that language.
 - When editing nodes, if you change the language for a node, you have to click on 'Preview' to have the right vocabularies/terms for that language. Otherwise, the language/taxonomy data for that node could be inconsistent.
-To use the term translation feature:
-- Create a vocabulary WITHOUT language
-- Add to that vocabulary terms with different languages
-- Go to the translation tab in categories administration and define translations between the terms of one vocabulary
-Example:
-- Create the vocabulary 'Colors' without language
-- Create the following terms with their language:
-  - Red [English]
-  - Rojo [Spanish]
-- Go to the 'translations' tab and click on 'new translation' for the 'Colors' vocabulary
-  - Select 'Red' for English
-  - Select 'Rojo' for Spanish
-  - Submit translation
   
 About URL aliasing with language codes -requires path module
 ====================================
@@ -96,7 +83,7 @@ Known problems, compatibility
 
 Sample sites, using this module - e-mail me to be listed here
 ==========================================================
-  http://www.reyero.net, well, its mine, no merit :-)
+  http://www.reyero.net
 
 Additional Support
 =================
