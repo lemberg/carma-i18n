@@ -1,7 +1,7 @@
-Index: D:/Proyectos/MyDrupal/includes/bootstrap.inc
+Index: bootstrap.inc
 ===================================================================
---- D:/Proyectos/MyDrupal/includes/bootstrap.inc	(revision 111)
-+++ D:/Proyectos/MyDrupal/includes/bootstrap.inc	(working copy)
+--- bootstrap.inc	(revision 111)
++++ bootstrap.inc	(working copy)
 @@ -152,6 +152,9 @@
  function variable_get($name, $default) {
    global $conf;
@@ -173,10 +173,10 @@ Index: D:/Proyectos/MyDrupal/includes/bootstrap.inc
  unset($conf);
  $config = conf_init();
  
-Index: D:/Proyectos/MyDrupal/includes/common.inc
+Index: common.inc
 ===================================================================
---- D:/Proyectos/MyDrupal/includes/common.inc	(revision 111)
-+++ D:/Proyectos/MyDrupal/includes/common.inc	(working copy)
+--- common.inc	(revision 111)
++++ common.inc	(working copy)
 @@ -134,70 +134,6 @@
  }
  

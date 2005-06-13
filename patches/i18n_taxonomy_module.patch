@@ -1,7 +1,7 @@
-Index: D:/Proyectos/MyDrupal/modules/taxonomy.module
+Index: taxonomy.module
 ===================================================================
---- D:/Proyectos/MyDrupal/modules/taxonomy.module	(revision 111)
-+++ D:/Proyectos/MyDrupal/modules/taxonomy.module	(working copy)
+--- taxonomy.module	(revision 111)
++++ taxonomy.module	(working copy)
 @@ -99,6 +99,8 @@
    }
  

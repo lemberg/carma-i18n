@@ -21,7 +21,7 @@ See http://drupal.org/diffandpatch for more info
     ja/node --> node/3 ....
   4. Done, go to the site front page and switch languages
 
-+ How can I get working traslated terms?
++ How can I get traslated terms working?
 ----------------------------------------
   To use the term translation feature:
   - Create a vocabulary WITHOUT language
