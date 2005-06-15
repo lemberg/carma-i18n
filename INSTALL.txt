@@ -6,7 +6,7 @@ Author: Jose A. Reyero
 Email: drupal at reyero dot net
 
 ********************************************************************
-  This is i18n module, version 4.6, and works with Drupal 4.6.0
+  This is i18n module, version 4.6, and works with Drupal 4.6.x
 ********************************************************************
 
 INSTALLATION:
@@ -16,6 +16,10 @@ INSTALLATION:
 2. Apply the patches to the Drupal core that are provided. Located in the 'patches' folder
 3. Apply the database modifications from the SQL file 'i18n.mysql.'  
    ** There's an update script to update the i18n database tables from 4.5 to 4.6 version: 18n_db_update.mysql
+
+In case you don't know how to apply the patches, patched files are available in my sandbox
+
+http://cvs.drupal.org/viewcvs/drupal/contributions/sandbox/jareyero/modules/i18n/patched_files_461/
 
 POST-INSTALLATION/CONFIGURATION:
 ============
