@@ -19,7 +19,7 @@ INSTALLATION:
 
 In case you don't know how to apply the patches, patched files are available in my sandbox
 
-http://cvs.drupal.org/viewcvs/drupal/contributions/sandbox/jareyero/modules/i18n/patched_files_461/
+http://cvs.drupal.org/viewcvs/drupal/contributions/sandbox/jareyero/modules/i18n/
 
 POST-INSTALLATION/CONFIGURATION:
 ============

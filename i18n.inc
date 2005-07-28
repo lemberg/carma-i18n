@@ -15,8 +15,11 @@
  * Implementation of hook_db_rewrite_sql()
  */
 function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
+  // Some exceptions for query rewrites
+  if(strstr(request_uri(),'cron.php')) return;
+
   $alias = $primary_table;
-  //debug("$primary_table $primary_key $query");
+
   switch ($alias) {
     case 'n':
       $result = i18n_db_node_rewrite($query, $primary_table, $primary_key);
@@ -26,15 +29,16 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
       $result = i18n_db_taxonomy_rewrite($query, $primary_table, $primary_key);
       break;
   }
-  //if($result) debug($result);
+
   return $result;
 }
 
 function i18n_db_node_rewrite($query, $primary_table, $primary_key){
-  // When loading specific nodes, language conditions shouldn't apply
-  if(arg(0) == 'node' && is_numeric(arg(1))) return;
   $alias = $primary_key{0};
-  if ($primary_table != 'n' || !strstr($query, '{node}')) {
+  // When loading specific nodes, language conditions shouldn't apply  
+  if (preg_match("/WHERE.* $alias.nid\s*=/", $query)) return;
+  
+  if ($primary_table != 'n' && !strstr($query, '{node}')) {
     $result['join'] = 'INNER JOIN {node} n USING (nid)';
     $alias = n;
   } 
