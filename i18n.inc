@@ -129,7 +129,7 @@ function i18n_block($op = 'list', $delta = 0) {
   if ($op == 'list') {
     $blocks[0]['info'] = t('Languages');
   }
-  else {
+  elseif($op == 'view') {
     $blocks['subject'] = t('Languages');
     $blocks['content'] = theme('item_list', i18n_get_links());
   }
@@ -681,7 +681,8 @@ function i18n_taxonomy_form_term($edit = array()) {
   // If vocabulary has language, this should be the one for the term
   if ($vocabulary->language) {
     $edit['language'] = $vocabulary->language;
-    $output = form_item(t('Language'),$languages[$vocabulary->language],t('The vocabulary already has a language.'));
+    $output = form_hidden('language', $vocabulary->language);
+    $output .= form_item(t('Language'),$languages[$vocabulary->language],t('The vocabulary already has a language.'));
   } 
   elseif ($termlang && $translations=i18n_term_get_translations($tid)) {
     // Term has translations. Not all languages are valid
@@ -832,13 +833,14 @@ function i18n_taxonomy($op, $type, $edit) {
         return i18n_taxonomy_form_term($edit);
         break;  
     case 'term/delete':
-	      db_query('DELETE FROM {i18n_taxonomy_term} WHERE tid=%d', $edit['tid']);
+        // This hook is not consistent, and passes an object when deleting
+	      db_query('DELETE FROM {i18n_taxonomy_term} WHERE tid=%d', $edit->tid);
         break;
     case 'vocabulary/form pre':
         return i18n_taxonomy_form_vocabulary($edit);
         break;
     case 'vocabulary/update':
-        if (isset($edit['language'])) {
+        if (isset($edit['language']) && $edit['language']) {
           db_query("UPDATE {term_data} SET language='%s' WHERE vid='%d'",$edit['language'],$edit['vid']);
         }
         break;
