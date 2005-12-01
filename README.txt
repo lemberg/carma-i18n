@@ -84,7 +84,12 @@ Known problems, compatibility
 Sample sites, using this module - e-mail me to be listed here
 ==========================================================
   http://www.reyero.net
-
+  http://www.para.ro
+  http://www.ctac.ca
+  http://grasshopperarts.com/
+  http://funkycode.com/
+  http://www.newoceans.nl/
+  
 Additional Support
 =================
 For support, please create a support request for this module's project: 

@@ -25,3 +25,14 @@ Gabor Suveg
 Jens Herden
 Jarno Elonen
 Jim Tittsler
+Nat Herrero
+
+SPONSORS
+--------
+Some people/companies have sponsored specific developments and bugfixes in this module
+
+Tercina Inc., http://www.tercina.com/
+Interactors, http://www.interactors.coop
+
+
+

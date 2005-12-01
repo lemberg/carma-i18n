@@ -118,6 +118,7 @@ function i18n_settings() {
   $output .= t('<p>These are intended only for advanced users. Some changes to the database are required. Please, do read the INSTALL.txt and README.txt files before enabling these options</p>' );
 
   // Advanced features
+  $output .= form_radios(t('Content selection mode'),'i18n_selection_mode', variable_get('i18n_selection_mode', 'simple'), _i18n_selection_mode(), t('Determines which content to show depending on language.'));
   // Language dependent tables
   if (is_array($db_prefix_i18n)) {
     $multi=true;
@@ -299,4 +300,34 @@ function _i18n_locale_supported_languages() {
   return $enabled;
 }
 
+/**
+ * i18n_query_rewrite_mode
+ * 	off = No language conditions inserted
+ * 	simple = Only current language and no language
+ * 	mixed = Only current and default languages
+ *  strict = Only current language
+ *  default = Only default language
+ *  user = User defined, in the module's settings page
+ */
+function i18n_selection_mode($mode=NULL){
+  static $current;
+  if($mode) {
+    $current = ($mode == 'user') ? variable_get('i18n_selection_mode', 'simple') : $mode;
+  } elseif($current) {
+    return $current;
+  } else {
+    return $current = variable_get('i18n_selection_mode', 'simple');
+  }
+}
+
+function _i18n_selection_mode(){
+  return array(
+    'simple' => t('Only current language and no language'),
+    'mixed' => t('Only current and default languages and no language'),
+    'default' => t('Only default language and no language'),    
+    'strict' => t('Only current language'),
+    'off' => t('All content. No language conditions apply'),
+    
+  );
+}
 ?>

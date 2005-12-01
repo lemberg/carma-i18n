@@ -19,7 +19,7 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
   if(strstr(request_uri(),'cron.php')) return;
 
   $alias = $primary_table;
-
+  
   switch ($alias) {
     case 'n':
       $result = i18n_db_node_rewrite($query, $primary_table, $primary_key);
@@ -37,12 +37,29 @@ function i18n_db_node_rewrite($query, $primary_table, $primary_key){
   $alias = $primary_key{0};
   // When loading specific nodes, language conditions shouldn't apply  
   if (preg_match("/WHERE.* $alias.nid\s*=/", $query)) return;
+
+  $mode = i18n_selection_mode();
+  if($mode == 'off') return;
   
   if ($primary_table != 'n' && !strstr($query, '{node}')) {
     $result['join'] = 'INNER JOIN {node} n USING (nid)';
-    $alias = n;
+    $alias = 'n';
   } 
-  $result['where'] = $alias .".language ='".i18n_get_lang()."' or ". $alias .".language = ''" ;
+  switch($mode){
+    case 'simple':
+      $result['where'] = "$alias.language ='".i18n_get_lang()."' OR $alias.language = ''" ;
+      break;
+    case 'mixed':
+      $result['where'] = "$alias.language ='".i18n_get_lang()."' OR $alias.language ='".i18n_default_language()."' OR $alias.language = ''" ;
+      break;
+    case 'strict':
+      $result['where'] = "$alias.language ='".i18n_get_lang()."'" ;
+      break;
+    case 'default':
+      $result['where'] = "$alias.language ='".i18n_default_language()."' OR $alias.language = ''" ;
+      break;
+      
+  }
 
   return $result;
 }
@@ -289,8 +306,21 @@ function i18n_translation_page() {
       break;
       
     case t('Submit'):
-      drupal_set_title(t('Submit'));
-      print theme('page', node_submit($edit));
+      if ($nid = node_submit($edit)) {
+        if (node_access('view', $edit)) {
+          drupal_goto('node/'. $nid);
+        }
+        else if (db_result(db_query('SELECT nid FROM {node} WHERE nid = %d', arg(1)))) {
+          drupal_access_denied();
+        }
+        else {
+          drupal_goto();
+        }
+      }
+      else {
+        drupal_set_title(t('Submit'));
+        print theme('page', node_preview($edit));
+      }
       break;
       
     case t('Delete'):
@@ -391,8 +421,8 @@ function i18n_nodeapi(&$node, $op, $arg = 0) {
           $form = form_hidden('i18n_snid', $node->i18n_snid ? $node->i18n_snid : $snid);
           // Load the node to be translated  
           $trans = node_load(array('nid' => $snid));
-          foreach ($trans as $field=>$value) {
-            if ($field != 'nid' && empty($node->$field)) {
+          foreach ($trans as $field => $value) {
+            if ($field != 'nid' && empty($node->$field) && !is_array($value)) {
               $node->$field = $value;
             }
           }          
