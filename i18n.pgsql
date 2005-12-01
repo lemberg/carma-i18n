@@ -38,5 +38,5 @@ ALTER TABLE term_data ALTER COLUMN language SET DEFAULT '';
 -- Add language and trid fields to vocabulary
 ALTER TABLE vocabulary ADD language varchar(12);
 UPDATE vocabulary SET language='';
-ALTER TABLE term_data ALTER COLUMN language SET NOT NULL;
-ALTER TABLE term_data ALTER COLUMN language SET DEFAULT '';
+ALTER TABLE vocabulary ALTER COLUMN language SET NOT NULL;
+ALTER TABLE vocabulary ALTER COLUMN language SET DEFAULT '';
