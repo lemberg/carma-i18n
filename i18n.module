@@ -160,13 +160,15 @@ function i18n_supported_languages() {
  * Returns default language
  */
 function i18n_default_language(){
-  return key(i18n_supported_languages());
+  $temp_key=i18n_supported_languages(); 
+  return key($temp_key);
 }
 
 // Get language from browser settings, but only if it is in the $i18n_languages array
 function i18n_get_browser_lang() {
   $languages = i18n_supported_languages();
-  $accept=explode(',',array_shift( explode(";",$_SERVER["HTTP_ACCEPT_LANGUAGE"])));
+  $exploded_server = explode(";",$_SERVER["HTTP_ACCEPT_LANGUAGE"]);
+  $accept=explode(',',array_shift($exploded_server));
   foreach ($accept as $lang) {
     $lang=substr($lang,0,2);
     if ( !empty($lang) && array_key_exists($lang,$languages)) {
@@ -182,7 +184,8 @@ function i18n_get_browser_lang() {
  * @param $trim true to remove language code from $path
  */
 function i18n_get_lang_prefix(&$path, $trim = false) {
-  $maybelang = array_shift(explode('/',$path));
+  $exploded_path = explode('/',$path);
+  $maybelang = array_shift($exploded_path);
   $languages = i18n_supported_languages();
   if(array_key_exists($maybelang, $languages)){
     if($trim) {

@@ -63,6 +63,8 @@ To have aliases for a translated node/page, you have to define each of them. I.e
   en/mycustompath -> node/34 (which is suppossed to be the english version)
   es/mycustompath -> node/35 (which should be the spanish version)
 
+Warning: Using aliased paths with languages in them causes some problems with the menu system, like the active item not being marked correctly and submenus not expanding.
+
 For outgoing URL's, the language code will be added authomatically.
 
 About language dependent variables:
