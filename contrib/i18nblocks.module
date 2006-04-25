@@ -1,0 +1,105 @@
+<?php
+// $Id$
+
+/**
+ * Internationalization (i18n) submodule: Multilingual meta-blocks
+ *
+ * @author Jose A. Reyero, 2005
+ *
+ */
+
+function i18nblocks_help($section = 'admin/help#i18nblocks' ) {
+  switch ($section) {
+    case 'admin/help#i18nblocks' :
+      $output = t('
+        <h2>This module provides support for multilingual blocks:</h2>
+        <ul>
+        <p>These are not blocks, but metablocks that group together a number of normal blocks and choose the right one depending on language</p>
+        <ul>
+        <li>First, you have to go to this module settings and define the number of multilingual blocks you want.</li>
+        <li>Then, in the block admin screen you will find some "Multilingual blocks". Set them up as usual (region, visibility, etc...) and then click on configuration, to define which one of the other blocks will be shown for each language.</li>
+        </ul>
+        <p><small>Module developed by Jose A. Reyero, <a href="http://www.reyero.net">www.reyero.net</a></small></p>' );
+      break;
+  case 'admin/modules#description' :
+    $output = t('Manages multilingual meta-blocks. <b>Requires i18n and locale module</b>' );
+    break;
+  }
+  return $output;
+}
+
+function i18nblocks_settings(){
+  $output = '';
+  $output .= form_textfield(t('Number of metablocks'), 'i18nblocks_number', variable_get('i18nblocks_number', 1), 4, 4);
+  return $output;
+}
+
+function i18nblocks_block($op = 'list', $delta = 0, $edit = array()) {
+  switch($op) {
+    case 'list':
+      for($i = 1; $i<= variable_get('i18nblocks_number', 1);$i++){
+        $block = i18nblocks_load($i);
+        $blocks[$i]['info'] = isset($block['name']) ? $block['name'] : t('Multilingual block ').$i;
+      }
+      return $blocks;
+     
+    case 'configure':
+      $i18nblock =i18nblocks_load($delta);
+      $languages = i18n_supported_languages();
+      $modules = array_intersect(module_list(), module_implements('block'));
+      // Compile list of available blocks
+      $blocklist = array('' => t(' -- '));      
+      foreach (module_implements('block') as $module) {
+        if($module != 'i18nblocks') { // Avoid this module's blocks, could be funny :-)
+          $module_blocks = module_invoke($module, 'block', 'list');
+          foreach($module_blocks as $delta => $block) {
+            $blocklist[$module.'_'.$delta] = $block['info']."($module)";
+          };
+        }
+      }
+      
+      $output = form_textfield(t('Block name'), "i18n][name", isset($i18nblock['name']) ? $i18nblock['name'] : t('Multilingual block ').$delta, 40, 40);
+      $output .= t('<h2>Select the block to be displayed for each language</h2>');
+      $header = array(t('Language'), t('Block'));
+  
+      foreach($languages as $lang => $langname){
+        $rows[] = array( 
+          $langname,
+          form_select(t('Block'), "i18nblocks][$lang", $i18nblock[$lang]['module'] .'_'. $i18nblock[$lang]['delta'] , $blocklist),
+        );
+      }
+      $output .= theme('table', $header, $rows);
+      return $output;
+      
+    case 'save':
+      $block = array('name' => $edit['i18n']['name']);
+      foreach($edit['i18nblocks'] as $lang => $path){
+        list($module, $gamma) = explode('_',$path);
+        $block[$lang]['module'] = $module;
+        $block[$lang]['delta'] = $gamma;
+      }
+      i18nblocks_save($block, $delta);
+      break;
+      
+    case 'view':
+      $meta = i18nblocks_load($delta);
+      $language = i18n_get_lang();
+      $module = $meta[$language]['module'];
+      $gamma = $meta[$language]['delta'];
+      //drupal_set_message("i18n-block lang=$language delta=$delta module=$module gamma=$gamma ");
+      $block = module_invoke($module, 'block', 'view', $gamma);
+      return $block;
+  }
+}
+
+/**
+ * Db layer: for now it stores each block as a variable
+ */
+function i18nblocks_load($delta){
+  return variable_get('i18nblocks_'.$delta, array());
+}
+
+function i18nblocks_save($block, $delta){
+  variable_set('i18nblocks_'.$delta, $block);
+}
+?>

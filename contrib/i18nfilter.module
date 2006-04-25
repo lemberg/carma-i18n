@@ -1,0 +1,77 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_help().
+ */
+function i18nfilter_help($section) {
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('Supports language switches in text. <b>Requires i18n module</b>');
+  }
+}
+
+
+/**
+ * Implementation of hook_filter().
+ */
+function i18nfilter_filter($op, $delta = 0, $format = -1, $text = ''){
+  switch ($op) {
+    case 'list':
+      return array(0 => t('i18n filter'));
+    case 'no cache':
+      return true;  // do not cache content!
+    case 'description':
+      return t('Enables users to enter language switches &lt;!--lang:--&gt; to prepare language dependant text.');
+    case 'name':
+      return t('i18n filter');
+    case 'process':
+      return _i18nfilter_process($text);
+    default:
+      return $text;
+  }
+}
+
+/**
+ * Filter <!--lang:en,es,...--> or <!--lang:*-->
+ */
+function _i18nfilter_process($text) {
+  if (!module_exist('i18n'))
+    return $text;
+  $lang = i18n_get_lang();
+  if (!$lang)
+    return $text;
+
+  $en = TRUE;
+  $output = '';
+  while ($text) {
+    $i = strpos($text, '<!--');
+    if ($i===FALSE) break;
+    if ($en)
+      $output .= substr($text, 0, $i);
+    $text = substr($text, $i);
+    $i = strpos($text, '-->');
+    if ($i===FALSE) break;
+    $tag = strtolower(trim(substr($text, strlen('<!--'), $i-strlen('<!--'))));
+    $i += strlen('-->');
+    if (strpos($tag, 'lang:') === 0) {
+      $tag = trim(substr($tag, strlen('lang:')));
+      $en = strpos($tag, '*') !== FALSE || eregi('(^|,| )'.$lang.'($|,| )', $tag);
+    }
+    else {
+      if ($en)
+        $output .= substr($text, 0, $i);
+    }
+    $text = substr($text, $i);
+  }
+  if ($en)
+    $output .= $text;
+  return $output;
+}
+
+function i18nfilter_filter_tips($delta, $format, $long = false) {
+  return t('Enter "&lt!--lang:en--&gt;Hello&lt!--lang:es--&gt;Hola&lt;!--lang:*--&gt;e=m*c^2" to make text language dependant.');
+}
+
+
+?>
