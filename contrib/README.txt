@@ -22,4 +22,9 @@ i18nfilter module
 Provides a filter for language switching in text.
 Contributed by Thomas Mandys
 
+i18ntrans module
+----------------------------------
+Quick and dirty translation of $i18n_variables
+Contributed by Emanuele Quinto
+
 Jose A. Reyero, drupal at reyero dot net, http://www.reyero.net
