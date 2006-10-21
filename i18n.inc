@@ -44,6 +44,7 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
   
   switch ($primary_table) {
     case 'n':
+    case 'node':
       // Node queries
       return i18n_db_node_rewrite($query, $primary_table, $primary_key, $mode);
     case 't':
@@ -124,10 +125,10 @@ function i18n_form_alter($form_id, &$form) {
       break;
       
     case 'taxonomy_form_term': // Taxonomy term
-      if(isset($form['vid']) && is_numeric($form['vid'])) {
-        $vocabulary = taxonomy_get_vocabulary($form['vid']);
+      if(isset($form['tid']) && is_numeric($form['tid']['#value'])) {
+        $term = taxonomy_get_term($form['tid']['#value']);
       } 
-	  $form['language'] = _i18n_language_select(isset($vocabulary) ? $vocabulary->language : i18n_get_lang());
+	    $form['language'] = _i18n_language_select(isset($term) ? $term->language : i18n_get_lang());
       break;
       
     default:
