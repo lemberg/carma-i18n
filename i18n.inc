@@ -57,7 +57,7 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
 function i18n_db_node_rewrite($query, $primary_table, $primary_key, $mode){
   // When loading specific nodes, language conditions shouldn't apply
   // TO-DO: Refine this regexp  
-  if (preg_match("/WHERE.*$primary_table.nid\s*=\s*(\d|%d)/", $query)) return;
+  if (preg_match("/WHERE.*\s$primary_table.nid\s*=\s*(\d|%d)/", $query)) return;
   
   $result['join'] = "LEFT JOIN {i18n_node} i18n ON $primary_table.nid = i18n.nid";
   $result['where'] = i18n_db_rewrite_where('i18n', $mode);
