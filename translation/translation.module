@@ -24,12 +24,18 @@ function translation_help($section = 'admin/help#translation' ) {
   switch ($section) {
     case 'admin/help#translation' :
       $output = '<p>'.t('This module is part of i18n package and provides support for translation relationships.').'</p>';
-      $output = '<p>'.t('The objects you can define translation relationships for are:').'</p>';
+      $output .= '<p>'.t('The objects you can define translation relationships for are:').'</p>';
       $output .= '<ul>';
       $output .= '<li>'.t('Nodes.').'</li>';
       $output .= '<li>'.t('Taxonomy Terms').'</li>';
       $output .= '</ul>';
-      $output .= '<p>'. t('For more information please read the <a href="@i18n">on-line help pages</a>.', array('@i18n' =>'http://drupal.org/node/31631')) .'</p>';
+      $output .= '<p>'.t('Additional features:').'</p>';
+      $output .= '<ul>';      
+      $output .= '<li>'.t('<i>Translations</i> block that looks like the language switcher provided by i18n module but also links to translations when available.').'</li>';
+      $output .= '<li>'.t('Basic translation workflow and administration page for content translation.').'</li>';
+      $output .= '<li>'.t('Links for node translations that can be displayed below each node, depending on module settings.').'</li>';
+      $output .= '</ul>';      
+      $output .= '<p>'.t('For more information please read the <a href="@i18n">on-line help pages</a>.', array('@i18n' =>'http://drupal.org/node/31631')) .'</p>';
       return $output;
       break;
     case 'admin/access#translation':

@@ -106,11 +106,11 @@ function i18n_help($section = 'admin/help#i18n' ) {
       $output .= '<ul>';
       $output .= '<li>'.t('Translation of the user interface for anonymous users (combined with locale)').'</li>';
       $output .= '<li>'.t('Multi-language for content. Adds a language field for nodes and taxonomy vocabularies and terms').'</li>';
-      $output .= '<li>'.t('Basic translation management').'</li>';
       $output .= '<li>'.t('Browser language detection').'</li>';
       $output .= '<li>'.t('Keeps the language setting accross consecutive requests using URL rewriting').'</li>';
       $output .= '<li>'.t('Provides a block for language selection and two theme functions: <i>i18n_flags</i> and <i>i18n_links</i>').'</li>';
       $output .= '<li>'.t('Support for long locale names').'</li>';
+      $output .= '<li>'.t('Multilingual menu items').'</li>';      
       $output .= '</ul>';
       $output .= '<p>'. t('For more information please read the <a href="@i18n">on-line help pages</a>.', array('@i18n' =>'http://drupal.org/node/31631')) .'</p>';
       return $output;
@@ -154,7 +154,7 @@ function i18n_menu($may_cache) {
         $language = $node->language;
       }
       if($language) i18n_selection_mode('node', db_escape_string($language));
-    } elseif(arg(0) == 'admin') {
+    } elseif(arg(0) == 'admin' && user_access('administer all languages')) {
       // No restrictions for administration pages
       i18n_selection_mode('off');
     }
@@ -668,40 +668,26 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
   switch ($primary_table) {
     case 'n':
     case 'node':
-      // Node queries
-      return i18n_db_node_rewrite($query, $primary_table, $primary_key, $mode);
+      // Node queries. 
+      // When loading specific nodes, language conditions shouldn't apply
+      if (preg_match("/WHERE.*\s$primary_table.nid\s*=\s*(\d|%d)/", $query)) return;
+      $result['join'] = "LEFT JOIN {i18n_node} i18n ON $primary_table.nid = i18n.nid";
+      $result['where'] = i18n_db_rewrite_where('i18n', $mode);
+      return $result;
     case 't':
     case 'v':
       // Taxonomy queries
-      return i18n_db_taxonomy_rewrite($query, $primary_table, $primary_key, $mode);
+      // When loading specific terms, vocabs, language conditions shouldn't apply
+      if (preg_match("/WHERE.* $primary_table\.tid\s*(=\s*\d|IN)/", $query)) return;
+      // Taxonomy for specific node
+      if (preg_match("/WHERE r\.nid = \%d/", $query)) return;
+      $result['where'] = i18n_db_rewrite_where($primary_table, $mode);
+      return $result;
+    case 'm':
+      // Menu queries
+      $result['where'] = i18n_db_rewrite_where($primary_table, $mode);
+      return $result;
   }
-}
-
-/**
- * Rewrite node queries
- */
-function i18n_db_node_rewrite($query, $primary_table, $primary_key, $mode){
-  // When loading specific nodes, language conditions shouldn't apply
-  if (preg_match("/WHERE.*\s$primary_table.nid\s*=\s*(\d|%d)/", $query)) return;
-  
-  $result['join'] = "LEFT JOIN {i18n_node} i18n ON $primary_table.nid = i18n.nid";
-  $result['where'] = i18n_db_rewrite_where('i18n', $mode);
-  
-  return $result;
-}
-
-/**
- * Rewrite taxonomy queries
- */
-function i18n_db_taxonomy_rewrite($query, $primary_table, $primary_key, $mode){
-  // When loading specific terms, vocabs, language conditions shouldn't apply
-  if (preg_match("/WHERE.* $primary_table\.tid\s*(=\s*\d|IN)/", $query)) return;
-  // Taxonomy for specific node
-  if (preg_match("/WHERE r\.nid = \%d/", $query)) return;
-  
-  $result['where'] = i18n_db_rewrite_where($primary_table, $mode);
- 
-  return $result;
 }
 
 /**
@@ -738,7 +724,7 @@ function i18n_exit(){
  * This is the place to add language fields to all forms
  */
 function i18n_form_alter($form_id, &$form) {
-  //drupal_set_message("i18n_form_alter form_id=$form_id ");
+  //drupal_set_message("DEBUG: i18n_form_alter form_id=$form_id ");
   switch($form_id){
     case 'taxonomy_overview_vocabularies':
       $vocabularies = taxonomy_get_vocabularies();
@@ -795,7 +781,15 @@ function i18n_form_alter($form_id, &$form) {
         }
         $form['#submit'] = array('i18n_admin_manage_screen_submit' => array()) + $form['#submit'];
       break;
-      
+    case 'menu_edit_item_form':
+      if ($mid = $form['mid']['#value']) {
+        $language = db_result(db_query('SELECT language FROM {menu} WHERE mid = %d', $mid));
+      } else {
+        $language = '';
+      }
+      $form['language'] = _i18n_language_select($language, t('You can set a language for this menu item.')); 
+      $form['#submit'] = array('i18n_menu_edit_item_form_submit' => array());
+      break;   
     default:
       // Node edit form
       if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id) {
@@ -825,6 +819,27 @@ function i18n_form_alter($form_id, &$form) {
         }
       }
   }    
+}
+
+/**
+ * Implementation of hook_perm().
+ * 
+ * Permissions defined
+ * - administer all languages
+ *   Disables language conditions for administration pages, so the user can view objects for all languages at the same time.
+ *   This applies for: menu items, taxonomy
+ */
+function i18n_perm() {
+  return array('administer all languages');
+}
+/**
+ * Process menu and menu item add/edit form submissions.
+ */
+function i18n_menu_edit_item_form_submit($form_id, $form_values) {
+  $mid = menu_edit_item_save($form_values);
+  drupal_set_message("Saving item $mid with language =". $form_values['language']);
+  db_query("UPDATE {menu} SET language = '%s' WHERE mid = %d", $form_values['language'], $mid);
+  return 'admin/build/menu';
 }
 
 /**
