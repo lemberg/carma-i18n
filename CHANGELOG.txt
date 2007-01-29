@@ -1,5 +1,7 @@
-4-7-4 to ....
+4-7-4 to 5-0
 --------------
+- Added language session tracking
+- Added per language menu items
 - Added support for RTL languages
 - Added native names for languages
 - Cleaned up multilingual variable management

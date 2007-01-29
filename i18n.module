@@ -29,6 +29,7 @@ function i18n_get_lang($setlanguage = NULL) {
     return $i18n_language = _i18n_get_lang();
   }
 }
+
 /**
  * Minimum initialization
  */
@@ -58,7 +59,6 @@ function i18n_block($op = 'list', $delta = 0) {
 /**
  * Implementation of hook_init()
  * 
- * Complete initialization. Only when module enabled.
  * May do a redirect from home page for not to get wrong versions in cache
  * Warning: when in bootstrap mode, this may be called before i18n_get_lang()
  */
@@ -75,8 +75,8 @@ function i18n_init(){
     // Check for update or cron scripts to disable rewriting and redirection
     if(preg_match('|/(?!index\.php)\w+\.php|', request_uri())){
       i18n_selection_mode('off');
-    } elseif( variable_get('cache', 0) && $lang != i18n_default_language() ) {
-      // Redirect to main page in $lang
+    } elseif ($lang != i18n_default_language()) {
+      // Redirect to main page in $lang when it's not default language.
       _i18n_goto($lang);
     } else {
       $_GET['q'] = i18n_frontpage($lang);
@@ -88,7 +88,6 @@ function i18n_init(){
     //search alias with and without lang and remove lang.
     $_GET['q'] = i18n_get_normal_path($path);
   }
-    
   // If not in bootstrap, variable init
   if(!_i18n_is_bootstrap()){
     //include drupal_get_path('module', 'i18n').'/i18n.inc';
@@ -222,7 +221,7 @@ function i18n_admin_settings() {
   // Check languages
   $languages = variable_get('i18n_languages', array());
   if (!count($languages) || ! count($languages['active']) > 1 ) {
-    drupal_set_message(t('No languages enabled. Visit the !locale_admin page to set up your languages.', array('%locale_admin' => l(t('Manage languages'), 'admin/settings/locale/'))), 'error');
+    drupal_set_message(t('No languages enabled. Visit the !locale_admin page to set up your languages.', array('!locale_admin' => l(t('Manage languages'), 'admin/settings/locale/'))), 'error');
   }
   $form['i18n_browser'] = array(
     '#type' => 'radios',
@@ -336,8 +335,15 @@ function i18n_languages($key = 'active') {
         }
       }
     } else {
-      $languages = locale_supported_languages();
-      $languages['site_default'] = key($languages);
+      // It is possible that languages are not initialized
+      if (function_exists('locale_supported_languages')) {
+        $languages = locale_supported_languages();
+      } else {
+        // Worst case scenario: locale module not loaded, for cached pages, at least this won't break everything
+        unset($languages); // There's some PHP bug: http://www.zend.com/zend/week/week98.php
+        $languages['name'] = array('en' => 'English');
+      }
+      $languages['site_default'] = key($languages['name']);
       $languages['active'] = $languages['name'];
       $languages['native'] = $languages['name'];
     }
@@ -470,9 +476,10 @@ function i18n_get_links($path = '', $query = NULL) {
  *	Gets language, checking in order:
  *
  *	1. Path language
- *	2. User language
- *	3. Browser language
- *	4. Default language
+ *  2. Session language
+ *	3. User language
+ *	4. Browser language
+ *	5. Default language
  */
 
 function _i18n_get_lang() {
@@ -485,7 +492,11 @@ function _i18n_get_lang() {
   // Language not set, find one
   $languages = i18n_supported_languages();
   if ($i18n_langpath && array_key_exists($i18n_langpath,$languages)) {
-    $i18n_lang = $i18n_langpath;
+    // Sets session language only when language is in path, not for other cases
+    $_SESSION['language'] = $i18n_lang = $i18n_langpath;  
+  }
+  elseif (isset($_SESSION['language']) && array_key_exists($_SESSION['language'], $languages)) {
+    $i18n_lang = $_SESSION['language'];
   }
   elseif ($user->uid && $user->language && array_key_exists($user->language,$languages)) {
     $i18n_lang = $user->language;
@@ -837,7 +848,6 @@ function i18n_perm() {
  */
 function i18n_menu_edit_item_form_submit($form_id, $form_values) {
   $mid = menu_edit_item_save($form_values);
-  drupal_set_message("Saving item $mid with language =". $form_values['language']);
   db_query("UPDATE {menu} SET language = '%s' WHERE mid = %d", $form_values['language'], $mid);
   return 'admin/build/menu';
 }

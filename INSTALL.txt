@@ -17,9 +17,7 @@ INSTALLATION:
 ============
 
 1. Create folder 'modules/i18n', and copy all the modules files, keeping directory structure, to this folder.
-
 2. If updating, run the update.php script following the standard procedure for Drupal updates.
-3. If updating, run the update.php script following the standard procedure for Drupal updates.
 
 POST-INSTALLATION/CONFIGURATION:
 ============
