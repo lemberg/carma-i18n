@@ -2,6 +2,7 @@
 // $Id$
 
 /**
+ * @file
  * Internationalization (i18n) module
  *
  * @author Jose A. Reyero, 2004
@@ -82,7 +83,7 @@ function i18n_init(){
       $_GET['q'] = i18n_frontpage($lang);
     } 
   } elseif ($lang == $path) { // When path is only language code
-    $_GET['q'] = i18n_frontpage($lang); 
+    $_GET['q'] = i18n_frontpage($lang);
   }
   elseif ($i18n_langpath) {
     //search alias with and without lang and remove lang.
@@ -203,10 +204,22 @@ function i18n_taxonomy($op, $type, $edit = NULL) {
         $language = isset($edit['language']) ? $edit['language'] : '';
         db_query("UPDATE {vocabulary} SET language='%s' WHERE vid=%d", $language, $edit['vid']);    
         if ($language && $op == 'update') {
-          db_query("UPDATE {term_data} t SET t.language='%s' WHERE t.vid=%d", $edit['language'], $edit['vid']);
+          db_query("UPDATE {term_data} SET language='%s' WHERE vid=%d", $edit['language'], $edit['vid']);
           drupal_set_message(t('Reset language for all terms.'));
         }
         break;
+  }
+}
+
+/**
+ * Implementation of hook_user()
+ * 
+ * Switch to user's language after login
+ */
+function i18n_user($op, &$edit, &$account, $category = NULL) {
+  if($op == 'login' && $account->language) {
+    $_SESSION['language'] = $account->language;
+    i18n_get_lang($account->language);
   }
 }
 
@@ -470,69 +483,6 @@ function i18n_get_links($path = '', $query = NULL) {
     $links[$lang]= theme('i18n_link', $name, i18n_path($path, $lang), $lang, $query);
   }
   return $links;  
-}
-
-/**
- *	Gets language, checking in order:
- *
- *	1. Path language
- *  2. Session language
- *	3. User language
- *	4. Browser language
- *	5. Default language
- */
-
-function _i18n_get_lang() {
-  global $user, $i18n_langpath;
-  static $i18n_lang;
-  // Check whether the language is already set.
-  if ($i18n_lang) {
-    return $i18n_lang;
-  }
-  // Language not set, find one
-  $languages = i18n_supported_languages();
-  if ($i18n_langpath && array_key_exists($i18n_langpath,$languages)) {
-    // Sets session language only when language is in path, not for other cases
-    $_SESSION['language'] = $i18n_lang = $i18n_langpath;  
-  }
-  elseif (isset($_SESSION['language']) && array_key_exists($_SESSION['language'], $languages)) {
-    $i18n_lang = $_SESSION['language'];
-  }
-  elseif ($user->uid && $user->language && array_key_exists($user->language,$languages)) {
-    $i18n_lang = $user->language;
-  }
-  elseif (variable_get("i18n_browser",0) && $lang=i18n_get_browser_lang()) {
-    $i18n_lang=$lang;
-  }
-  else {
-    $i18n_lang=key($languages);
-  }
-  return $i18n_lang;
-}
-
-/**
- * Check whether we are in bootstrap mode
- */  
-function _i18n_is_bootstrap(){
-  return !function_exists('drupal_get_headers');
-}    
-
-/**
- * Sets db_prefix to given language
- */
-function _i18n_set_db_prefix($lang) {
-  global $db_prefix, $db_prefix_i18n;
-  if (is_array($db_prefix_i18n)) {
-    $db_prefix = array_merge($db_prefix, str_replace('**', $lang, $db_prefix_i18n));
-  }
-}
-
-/**
- * To get the original path. 
- * Cannot use $_GET["q"] cause it may have been already changed
- */
-function _i18n_get_original_path() {
-  return isset($_REQUEST["q"]) ? trim($_REQUEST["q"],"/") : '';
 }
 
 /**
@@ -983,6 +933,44 @@ function i18n_variable_del($name, $language) {
 }
 
 /**
+ *  Gets language, checking in order:
+ *
+ *  1. Path language
+ *  2. Session language
+ *  3. User language
+ *  4. Browser language
+ *  5. Default language
+ */
+function _i18n_get_lang() {
+  global $user, $i18n_langpath;
+  static $i18n_lang;
+  // Check whether the language is already set.
+  if ($i18n_lang) {
+    return $i18n_lang;
+  }
+  // Language not set, find one
+  $languages = i18n_supported_languages();
+  
+  if ($i18n_langpath && array_key_exists($i18n_langpath,$languages)) {
+    // Sets session language only when language is in path, not for other cases
+    $_SESSION['language'] = $i18n_lang = $i18n_langpath;  
+  }
+  elseif (isset($_SESSION['language']) && array_key_exists($_SESSION['language'], $languages)) {
+    $i18n_lang = $_SESSION['language'];
+  }
+  elseif ($user->uid && $user->language && array_key_exists($user->language,$languages)) {
+    $i18n_lang = $user->language;
+  }
+  elseif (variable_get("i18n_browser",0) && $lang=i18n_get_browser_lang()) {
+    $i18n_lang=$lang;
+  }
+  else {
+    $i18n_lang= i18n_default_language();
+  }
+  return $i18n_lang;
+}
+
+/**
  * Helper function to create language selector
  */
 function _i18n_language_select($value ='', $description ='', $weight = -20){
@@ -996,6 +984,9 @@ function _i18n_language_select($value ='', $description ='', $weight = -20){
   );
 }
 
+/**
+ * Load language variables into array
+ */
 function _i18n_variable_init(){  
   $lang = _i18n_get_lang();
   $variables = array();
@@ -1009,9 +1000,7 @@ function _i18n_variable_init(){
     }
     cache_set('variables:'.$lang, 'cache', serialize($variables));
   }
-
-  return $variables;    
-
+  return $variables;
 }
 
 /**
@@ -1037,3 +1026,29 @@ function _i18n_variable_exit(){
     }
   }
 }
+
+/**
+ * Check whether we are in bootstrap mode
+ */  
+function _i18n_is_bootstrap(){
+  return !function_exists('drupal_get_headers');
+}    
+
+/**
+ * Sets db_prefix to given language
+ */
+function _i18n_set_db_prefix($lang) {
+  global $db_prefix, $db_prefix_i18n;
+  if (is_array($db_prefix_i18n)) {
+    $db_prefix = array_merge($db_prefix, str_replace('**', $lang, $db_prefix_i18n));
+  }
+}
+
+/**
+ * To get the original path. 
+ * Cannot use $_GET["q"] cause it may have been already changed
+ */
+function _i18n_get_original_path() {
+  return isset($_REQUEST["q"]) ? trim($_REQUEST["q"],"/") : '';
+}
+

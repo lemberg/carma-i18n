@@ -162,7 +162,6 @@ function translation_block($op = 'list', $delta = 0) {
  * Implementation of hook_form_alter().
  */
 function translation_form_alter($form_id, &$form) {
-  // drupal_set_message('translation_form_alter');
   // Node edit form
   if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id && variable_get('i18n_node_'.$form['type']['#value'], 0)) {
     $node = $form['#node'];
@@ -239,21 +238,28 @@ function translation_form_alter($form_id, &$form) {
       }
     }
     // Translate taxonomy terms
-    // TO-DO: take care of module order. Default ordering is filename so it depends on install which is too bad!!
     if(isset($trans->taxonomy) && is_array($trans->taxonomy)) {
       // Set translated taxonomy terms
-      $form['#node']->taxonomy = array();
+      $taxonomy = array();
       foreach ($trans->taxonomy as $tid => $term) {
-        $translated_terms = translation_term_get_translations(array('tid' =>$tid));
-        if ($translated_terms && $newterm = $translated_terms[$language]) {
-          $form['#node']->taxonomy[$newterm->tid] = $newterm;
-          //drupal_set_message("DEBUG: Translated term $tid to ". $newterm->tid);
+        if ($term->language) {
+          $translated_terms = translation_term_get_translations(array('tid' =>$tid));
+          if($translated_terms && $newterm = $translated_terms[$language]) {
+            $taxonomy[$newterm->tid] = $newterm;
+            //drupal_set_message("DEBUG: Translated term $tid to ". $newterm->tid);
+          }
+        } else {
+          // Term has no language. Should be ok
+          $taxonomy[$tid] = $term;
         }
-        // Run again taxonomy_form_alter ?
-        if(isset($form['taxonomy'])) {
-          unset($form['taxonomy']);
-          taxonomy_form_alter($form_id, $form);
-        }
+      }
+      $form['#node']->taxonomy = $taxonomy;
+      
+      // Run again taxonomy_form_alter. Better yes so we don't mess with module weights
+      // TO-DO: take care of module order. Default ordering is filename so it depends on install which is too bad!!
+      if (isset($form['taxonomy'])) {
+        unset($form['taxonomy']);
+        taxonomy_form_alter($form_id, $form);
       }        
     }
   }    

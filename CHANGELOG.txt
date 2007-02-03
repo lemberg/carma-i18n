@@ -1,5 +1,10 @@
 4-7-4 to 5-0
 --------------
+- Added terms with no language for translations
+- Added: Switch to user's language after login
+- Fixed bug with default language
+29/01/2007
+- Added automatic taxonomy translation when translating nodes
 - Added language session tracking
 - Added per language menu items
 - Added support for RTL languages
