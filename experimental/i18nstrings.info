@@ -1,0 +1,5 @@
+name = Strings
+description = Translatable strings.
+dependencies = i18n
+package = Multilanguage - i18n - experimental
+version = 5.0 dev

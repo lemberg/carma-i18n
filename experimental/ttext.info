@@ -1,0 +1,8 @@
+; $Id$
+name = Translatable Text
+description = CCK translatable text field
+version = "$Name$"
+dependencies = i18n i18nstrings
+package = Multilanguage - i18n - experimental
+
+

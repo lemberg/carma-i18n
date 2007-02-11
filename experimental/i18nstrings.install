@@ -1,0 +1,21 @@
+<?php
+// $Id$
+
+function i18nstrings_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("
+CREATE TABLE  {i18n_strings} (
+  `strid` varchar(100) NOT NULL,
+  `locale` varchar(12) NOT NULL,
+  `text` text NOT NULL,
+  PRIMARY KEY  (`strid`,`locale`)
+) DEFAULT CHARSET=utf8
+");
+
+      break;
+    default:
+      drupal_set_message(t('Database type not supported. This module needs manual installation.'));
+  }
+}

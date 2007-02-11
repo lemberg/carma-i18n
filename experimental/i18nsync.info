@@ -1,0 +1,6 @@
+; $Id$
+name = Synchronization
+description = Synchronizes translations
+version = "$Name$"
+dependencies = i18n translation
+package = Multilanguage - i18n - experimental

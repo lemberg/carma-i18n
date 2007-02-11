@@ -698,14 +698,15 @@ function i18n_form_alter($form_id, &$form) {
       if(isset($form['vid'])) {
         $vocabulary = taxonomy_get_vocabulary($form['vid']['#value']);
       } 
-      $form['language'] = _i18n_language_select(isset($vocabulary) ? $vocabulary->language : i18n_get_lang(),t('This language will be set for all terms in this vocabulary')); 
+      $form['i18n'] = array('#type' => 'fieldset', '#title' => t('Multilingual options'), '#collapsible' => TRUE, '#weight' => -20);
+      $form['i18n']['language'] = _i18n_language_select(isset($vocabulary) ? $vocabulary->language : i18n_get_lang(),t('This language will be set for all terms in this vocabulary')); 
       break;
       
     case 'taxonomy_form_term': // Taxonomy term
       if(isset($form['tid']) && is_numeric($form['tid']['#value'])) {
         $term = taxonomy_get_term($form['tid']['#value']);
       } 
-        $form['language'] = _i18n_language_select(isset($term) ? $term->language : i18n_get_lang());
+      $form['language'] = _i18n_language_select(isset($term) ? $term->language : i18n_get_lang());
       break;
      
      case 'node_type_form':

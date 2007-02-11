@@ -262,7 +262,7 @@ function translation_form_alter($form_id, &$form) {
         taxonomy_form_alter($form_id, $form);
       }        
     }
-  }    
+  }
 }
 
 /**
@@ -286,10 +286,10 @@ function translation_nodeapi(&$node, $op, $arg = 0) {
           // Clone files for node attachments
           if(isset($node->translation_files)) {
             foreach($node->translation_files as $fid => $file) {
-                if(!$file['remove']) {
+              if(!$file['remove']) {
                 // We are using revisions to have a file linked to different nodes, different descriptions
                 db_query("INSERT INTO {file_revisions} (fid, vid, list, description) VALUES (%d, %d, %d, '%s')", $file['fid'], $node->vid, $file['list'], $file['description']);
-                }
+              }
             }
           }
         }
@@ -670,26 +670,21 @@ function translation_node_form_submit($form_id, $form_values){
 }
 
 /**
- * Taxonomy hook
- * $edit parameter is an array, not an object !!
+ * Implementation of hook taxonomy.
  */
- // $op = insert, update, delete
 function translation_taxonomy($op, $type = NULL, $edit = NULL) {
-  if (!is_array($op)) {
-    switch ("$type/$op") {
-      case 'term/insert':
-      case 'term/update':
-        if (!$edit['language'] && $edit['trid']) {
-          // Removed language, remove trid
-          db_query('UPDATE {term_data} SET trid=0 WHERE tid=%d', $edit['tid']);
-          if(db_affected_rows()) drupal_set_message(t('Removed translation information from term'));
-        }
-        break;
-    }
-  } else {
-    return $op;
+  switch ("$type/$op") {
+    case 'term/insert':
+    case 'term/update':
+      if (!$edit['language'] && $edit['trid']) {
+        // Removed language, remove trid
+        db_query('UPDATE {term_data} SET trid=0 WHERE tid=%d', $edit['tid']);
+        if(db_affected_rows()) drupal_set_message(t('Removed translation information from term'));
+      }
+      break;
   }
 }
+
 /**
  * Implementation of hook_link().
  */
@@ -777,9 +772,9 @@ function translation_get_node_type($nid) {
  * This is the callback for taxonomy translations
  * 
  * Gets the urls:
- * 		admin/taxonomy/i18n/term/xx
- * 		admin/taxonomy/i18n/term/new/xx
- * 		admin/taxonomy/vid/translation/op/trid
+ * 		admin/content/taxonomy/i18n/term/xx
+ * 		admin/content/taxonomy/i18n/term/new/xx
+ * 		admin/content/taxonomy/vid/translation/op/trid
  */
 
 function translation_taxonomy_admin() {
@@ -791,7 +786,7 @@ function translation_taxonomy_admin() {
     case t('Save'):    
     case 'edit':
       drupal_set_title(t('Edit term translations'));
-      $output = translation_taxonomy_form($vid, arg(6), $edit);
+      $output = drupal_get_form('translation_taxonomy_term_form', $vid, arg(6), $edit);
       break;
     case t('Submit'):
       drupal_set_title(t('Submit'));
@@ -848,7 +843,7 @@ function translation_taxonomy_overview($vid) {
 /**
  * Produces a vocabulary translation form
  */
-function translation_taxonomy_form($vid, $trid = NULL, $edit = array()) {
+function translation_taxonomy_term_form($vid, $trid = NULL, $edit = array()) {
   $languages = i18n_supported_languages();
   if ($trid == 'new') {
     $translations = array();
@@ -873,21 +868,21 @@ function translation_taxonomy_form($vid, $trid = NULL, $edit = array()) {
     );
     $form[$lang]['old'] = array('#type' => 'hidden', '#value' =>$current);
   }
-
   $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
-  return drupal_get_form('translation_taxonomy', $form);
+  $form['destination'] = array('#type' => 'hidden', '#value' => 'admin/content/taxonomy/'.arg(3).'/translation');
+  return $form;
 }
 
 /**
- * Process vocabulary translation form
+ * Form callback: Process vocabulary translation form
  */
-function translation_taxonomy_submit($form_id, $form_values) {
+function translation_taxonomy_term_form_submit($form_id, $form_values) {
   $trid = $form_values['trid'];
   $languages = i18n_supported_languages();
   $translations = array();
   // Delete old translations
   if($trid){
-    db_query("UPDATE {term_data} SET trid = 0 WHERE trid=%d", $trid);
+    db_query("UPDATE {term_data} SET trid = 0 WHERE trid= %d", $trid);
   }
   foreach ($languages as $lang => $name) {
     if (is_numeric($form_values[$lang]['tid'])) {
@@ -969,11 +964,37 @@ function translation_url($url, $lang) {
 }
 
 /**
- *  Returns an url-part, pointing to the translated node, if exists 
+ * Get translated node's nid
+ * 
+ * @param $nid
+ *   Node nid to search for translation
+ * @param $language
+ *   Language to search for the translation, defaults to current language
+ * @param $default
+ *   Value that will be returned if no translation is found
+ * @return
+ *   Translated node nid if exists, or $default
  */
-function translation_node_nid($nid, $lang) {
-  $sql = 'SELECT n.nid FROM {i18n_node} n INNER JOIN {i18n_node} a ON n.nid = a.nid INNER JOIN {i18n_node} b ON a.trid = b.trid AND b.nid =%d WHERE n.nid != %d AND n.language = \'%s\' AND a.trid != 0';
-  return db_result(db_query($sql, $nid, $nid, $lang));
+function translation_node_nid($nid, $language = NULL, $default = NULL) {
+  $translation = db_result(db_query("SELECT n.nid FROM {i18n_node} n INNER JOIN {i18n_node} a ON n.trid = a.trid AND n.nid != a.nid WHERE a.nid = %d AND n.language = '%s' AND n.trid", $nid, $language ? $language : i18n_get_lang()));
+  return $translation ? $translation : $default;
+}
+
+/**
+ * Get translated term's tid
+ * 
+ * @param $tid
+ *   Node nid to search for translation
+ * @param $language
+ *   Language to search for the translation, defaults to current language
+ * @param $default
+ *   Value that will be returned if no translation is found
+ * @return
+ *   Translated term tid if exists, or $default
+ */
+function translation_term_tid($tid, $language = NULL, $default = NULL) {
+  $translation = db_result(db_query("SELECT t.tid FROM {term_data} t INNER JOIN {term_data} a ON t.trid = a.trid AND t.tid != a.tid WHERE a.tid = %d AND t.language = '%s' AND t.trid", $tid, $language ? $language : i18n_get_lang()));
+  return $translation ? $translation : $default;
 }
 
 /**
@@ -994,8 +1015,8 @@ function translation_taxonomy_tids($str_tids, $lang) {
   }
   $translated_tids = array();
   foreach ($tids as $tid) {
-    if ($translated_tid = translation_term_get_translations(array('tid' =>$tid))) {
-      $translated_tids[] = $translated_tid[$lang]->tid;
+    if ($translated_tid = translation_term_tid($tid, $lang)) {
+      $translated_tids[] = $translated_tid;
     }
   }
   return implode($separator, $translated_tids);
