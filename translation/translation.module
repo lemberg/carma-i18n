@@ -251,7 +251,6 @@ function translation_form_alter($form_id, &$form) {
  */
 function translation_nodeapi(&$node, $op, $arg = 0) {
   if (variable_get("i18n_node_$node->type", 0)) {
-    //drupal_set_message("DEBUG:translation_nodeapi:op=$op $node->nid");
     switch ($op) {
       case 'load':
         $node->translation = translation_node_get_translations(array('nid' =>$node->nid), FALSE);
@@ -308,7 +307,7 @@ function translation_nodeapi(&$node, $op, $arg = 0) {
           unset($source->nid, $source->vid, $source->path, $source->language, $source->files);
           foreach($source as $field => $value) {
             if (!isset($node->$field)) {
-              $node->$field = $value; print "$field,"; 
+              $node->$field = $value; 
             }
           }
           break;
