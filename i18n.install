@@ -72,7 +72,10 @@ function i18n_install() {
       db_query("CREATE SEQUENCE {i18n_node}_trid_seq INCREMENT 1 START 1");
       db_query("CREATE SEQUENCE {term_data}_trid_seq INCREMENT 1 START 1");
       
-  } 
+  }
+  // Set module weight for it to run after core modules
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n' AND type = 'module'");
+  db_query("UPDATE {system} SET weight = 20 WHERE name = 'translation' AND type = 'module'");
 }
 
 /**
@@ -118,5 +121,12 @@ function i18n_update_5(){
   $items[] = update_sql("ALTER TABLE {menu} ADD language VARCHAR(12) NOT NULL default ''");
   return $items; 
 }
+// Module weights
+function i18n_update_6(){
+  $items[] = update_sql("UPDATE {system} SET weight = 10 WHERE name = 'i18n' AND type = 'module'");
+  $items[] = update_sql("UPDATE {system} SET weight = 20 WHERE name = 'translation' AND type = 'module'");
+  return $items;
+}
+
 
 ?>
