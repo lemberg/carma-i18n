@@ -74,8 +74,8 @@ function i18n_install() {
       
   }
   // Set module weight for it to run after core modules
-  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n' AND type = 'module'");
-  db_query("UPDATE {system} SET weight = 20 WHERE name = 'translation' AND type = 'module'");
+  db_query("UPDATE {system} SET weight = -10 WHERE name = 'i18n' AND type = 'module'");
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'translation' AND type = 'module'");
 }
 
 /**
@@ -121,10 +121,14 @@ function i18n_update_5(){
   $items[] = update_sql("ALTER TABLE {menu} ADD language VARCHAR(12) NOT NULL default ''");
   return $items; 
 }
-// Module weights
+// Module weithgts
 function i18n_update_6(){
-  $items[] = update_sql("UPDATE {system} SET weight = 10 WHERE name = 'i18n' AND type = 'module'");
-  $items[] = update_sql("UPDATE {system} SET weight = 20 WHERE name = 'translation' AND type = 'module'");
+  // Old module weights. Caused some trouble with other modules. 
+}
+// Redefinition of module weights
+function i18n_update_7(){
+  $items[] = update_sql("UPDATE {system} SET weight = -10 WHERE name = 'i18n' AND type = 'module'");
+  $items[] = update_sql("UPDATE {system} SET weight = 10 WHERE name = 'translation' AND type = 'module'");
   return $items;
 }
 

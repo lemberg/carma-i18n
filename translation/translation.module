@@ -165,7 +165,10 @@ function translation_form_alter($form_id, &$form) {
   // Node add/edit form
   if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id && variable_get('i18n_node_'.$form['type']['#value'], 0)) {
     $node = $form['#node'];
-    $languages = i18n_supported_languages();
+    
+    // Allow node to set it's own language list
+    $languages = i18n_node_language_list($node);
+    
     // Translation workflow, default
     if ($node->nid && $node->translation) {
       $translations = $node->translation;
@@ -183,7 +186,6 @@ function translation_form_alter($form_id, &$form) {
       // Do not allow language change
       $form['i18n']['language']['#disabled'] = TRUE;
       $form['i18n']['language']['#description'] = t('Language cannot be changed while creating a translation.');
-      //translation_node_populate_fields($trans, $form, $node);      
       
       if($trans->trid){
         $form['i18n']['trid'] = array('#type' => 'hidden', '#value' => $trans->trid);
@@ -196,7 +198,7 @@ function translation_form_alter($form_id, &$form) {
     if ($translations) {
       // Unset invalid languages
       foreach(array_keys($translations) as $lang) {
-          unset($form['i18n']['language']['#options'][$lang]);
+        unset($form['i18n']['language']['#options'][$lang]);
       }
       // Add translation list
       $form['i18n']['#title'] = t('Language and translations');
@@ -277,71 +279,50 @@ function translation_nodeapi(&$node, $op, $arg = 0) {
         if (!$node->nid && isset($_GET['translation']) && ($nid = $_GET['translation']) && ($language = $_GET['language']) && user_access('translate nodes')) {
           // We are translating a node from a source node
           // Load the node to be translated and populate fields
-          $node->translation_nid = $nid;
-          $node->language = $language;
-          $source = $node->translation_source = node_load($node->translation_nid);
-          
-          // Taxonomy translation
-          if(is_array($source->taxonomy)) {
-            // Set translated taxonomy terms
-            $node->taxonomy = array();
-            foreach ($source->taxonomy as $tid => $term) {
-              if ($term->language) {
-                $translated_terms = translation_term_get_translations(array('tid' =>$tid));
-                if($translated_terms && $newterm = $translated_terms[$node->language]) {
-                  $node->taxonomy[$newterm->tid] = $newterm;
-                  //drupal_set_message("DEBUG: Translated term $tid to ". $newterm->tid);
-                }
-              } else {
-                // Term has no language. Should be ok
-                $node->taxonomy[$tid] = $term;
-              }
-            }
-          }
-          
-          // Translations are taken from source node          
-          $node->translation = $source->translation;
-          $node->translation[$source->language] = $source;
-          
-          // Rest of fields. Unset some known ones not to be copied over
-          unset($source->nid, $source->vid, $source->path, $source->language, $source->files);
-          foreach($source as $field => $value) {
-            if (!isset($node->$field)) {
-              $node->$field = $value; 
-            }
-          }
-          break;
-      }        
+          translation_node_prepare($node, $nid, $language);
+        }
+        break;        
     }
   }
 }
 
 /**
- * Fills up some fields from source node
+ * Prepare node for translation
  */
-function translation_node_populate_fields($source, &$form, &$node, $level = 0){
-  $fields = array();
-  $language = $form['i18n']['language']['#default_value'];  
-  foreach(element_children($form) as $key) {
-    if($key == 'nid' || $key == 'vid' || $key == 'i18n'){
-      continue;
-    } elseif(isset($source->$key) && !isset($node->$key)) {
-      if($level == 0 && $key == 'parent' && is_numeric($source->parent)) {
-        // Translate book outline
-      	$trans = translation_node_get_translations(array('nid' => $source->parent));
-        if(isset($trans[$language])) {
-         $form['parent']['#default_value'] = $trans[$language]->nid;
+function translation_node_prepare(&$node, $sourcenid, $language) {
+  $node->translation_nid = $sourcenid;
+  $node->language = $language;
+  $source = $node->translation_source = node_load($node->translation_nid);
+  
+  // Taxonomy translation
+  if(is_array($source->taxonomy)) {
+    // Set translated taxonomy terms
+    $node->taxonomy = array();
+    foreach ($source->taxonomy as $tid => $term) {
+      if ($term->language) {
+        $translated_terms = translation_term_get_translations(array('tid' =>$tid));
+        if($translated_terms && $newterm = $translated_terms[$node->language]) {
+          $node->taxonomy[$newterm->tid] = $newterm;
+          //drupal_set_message("DEBUG: Translated term $tid to ". $newterm->tid);
         }
       } else {
-        $node->$key = $form[$key]['#default_value'] = $source->$key;
-        $fields[] = $key;
+        // Term has no language. Should be ok
+        $node->taxonomy[$tid] = $term;
       }
-    } elseif(!isset($form[$key]['#tree'])) {
-      translation_node_populate_fields($source, $form[$key], $node, $level +1);
     }
   }
-  // For debugging
-  //if($fields) drupal_set_message("Populated fields ($level): ". implode(', ', $fields));
+  
+  // Translations are taken from source node          
+  $node->translation = $source->translation;
+  $node->translation[$source->language] = $source;
+  
+  // Rest of fields. Unset some known ones not to be copied over
+  unset($source->nid, $source->vid, $source->path, $source->language, $source->files);
+  foreach($source as $field => $value) {
+    if (!isset($node->$field)) {
+      $node->$field = $value; 
+    }
+  }  
 }
 
 /**
@@ -387,7 +368,7 @@ function translation_node_form($node, $lang, $list){
   $form['language'] = array('#type' => 'hidden', '#value' => $lang);
   $form['source_nid'] = array('#type' => 'hidden', '#value' => $node->nid);
   $form['trid'] = array('#type' => 'hidden', '#value' => $node->trid);
-  $languages = i18n_supported_languages();
+  $languages = i18n_node_language_list($node);
 
   $form['nodes']['nid'] = array(
    '#type' => 'radios', '#title' => t('Select translation for %language', array('%language' => $languages[$lang])), 
@@ -609,9 +590,13 @@ function theme_translation_admin_nodes($form) {
 
 /**
  * Shows overview of current translations plus remove button
+ * @param $node
+ *   Node to show translations for
+ * @param $languages
+ *   Alternate list of languages
  */
 function translation_node_overview($node) {
-  $languages = i18n_supported_languages();
+  $languages = i18n_node_language_list($node);
   unset($languages[$node->language]);
   // $output = t('<h2>Current translations</h2>');
   $header = array(t('Language'), t('Title'), t('Status'), t('Options'));
@@ -1041,15 +1026,21 @@ function translation_taxonomy_tids($str_tids, $lang) {
 }
 
 /**
- * function translation_get_links
+ * Returns an array of links for all languages
  * 
- * Returns an array of links for all languages, with or without names
+ * @param $path
+ *   Drupal internal path
+ * @param $query
+ *   Query string
+ * @param $names
+ *   Names to use for the links. Defaults to native language names
  */
-function translation_get_links($path = '', $query = NULL) {
+function translation_get_links($path = '', $query = NULL, $names = NULL) {
   $current = i18n_get_lang();
-  foreach(i18n_supported_languages() as $lang => $name){
+  $names = $names ? $names : i18n_languages('native');
+  foreach (array_keys(i18n_supported_languages()) as $lang){
     $url = translation_url($path, $lang);
-    $links[]= theme('i18n_link', $name, i18n_path($url, $lang) , $lang, $query);
+    $links[]= theme('i18n_link', $names[$lang], i18n_path($url, $lang) , $lang, $query);
   }
   return $links;  
 }
@@ -1058,12 +1049,13 @@ function translation_get_links($path = '', $query = NULL) {
  * Return status for translations workflow
  */
 function _translation_status(){
-	return array(
+  return array(
     TRANSLATION_STATUS_NONE => t('None'), 
     TRANSLATION_STATUS_SOURCE => t('Source content (to be translated)'), 
     TRANSLATION_STATUS_WORKING => t('Translation in progress'), 
     TRANSLATION_STATUS_TRANSLATED => t('Translated content'),
-    TRANSLATION_STATUS_UPDATED => t('Source updated (to update translation)'));
+    TRANSLATION_STATUS_UPDATED => t('Source updated (to update translation)')
+  );
 }
 
 /**
@@ -1073,11 +1065,11 @@ function _translation_status(){
  */
 function theme_translation_node_link($node, $lang, $baselang = NULL, $title = FALSE){
   $baselang = $baselang ? $baselang : $lang;
-  
+
   if($title){
     $name = $node->title;
   } else {
-    $languages = i18n_supported_languages();
+    $languages = i18n_languages('native');
     $name = $languages[$lang];
   }
   return array(
@@ -1098,7 +1090,8 @@ function theme_translation_link($text, $target, $lang, $separator='&nbsp;') {
  */
 function theme_translation_node_list($list){
   $header = array(t('Language'), t('Title'));
-  $languages = i18n_supported_languages();
+  // Use full language list with English names, then localize
+  $languages = i18n_languages('name');
   foreach($list as $lang => $node){
     $rows[] = array($languages[$lang], l($node->title, 'node/'.$node->nid) );
   }
