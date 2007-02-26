@@ -55,7 +55,7 @@ function i18n_views_tables() {
     'operator' => array('=' => t('Is')),
     'list' => '_i18n_selection_mode',
     'help' => t('Content language.'),
-    'cacheable' => FALSE // For development
+    'cacheable' => FALSE // This query condition cannot be cached
   );
   return $tables;
 }
@@ -75,23 +75,25 @@ function i18n_views_handler_language($fieldinfo, $fielddata, $value, $data) {
  * Filter handler callback. Manages language selection mode
  */
 function i18n_views_filter_handler($filterdata, $filterinfo, &$query) {
-  global $i18n_views_selection;  
   if ($filterdata == 'handler' && $filterinfo['field'] == 'i18n.selection' && $mode = $filterinfo['value']) {
-    //drupal_set_message("i18nviews_filter_handler $mode");
+    // If this filter is used, rollback value set in pre_query and set the new one.
+    i18n_selection_mode('reset');
     i18n_selection_mode($mode);
-    $i18n_views_selection = TRUE;
   }
 }
-
+/**
+ * Implementation of hook_views_pre_query().
+ * 
+ * Disable language conditions for views. This is called before filter handlers
+ */
+function i18n_views_pre_query(&$view) {
+    i18n_selection_mode('off');
+}
 /**
  * Implementation of hook_views_pre_view().
  * 
  * If used language selection filter, reset query rewriting again
  */
 function i18n_views_pre_view(&$view, &$items) {
-  global $i18n_views_selection;
-  if($i18n_views_selection) {
-    i18n_selection_mode('reset');
-    $i18n_views_selection = FALSE;
-  }
+  i18n_selection_mode('reset');
 }
