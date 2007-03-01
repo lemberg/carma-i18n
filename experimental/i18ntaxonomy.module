@@ -5,7 +5,7 @@
  * @file
  * Internationalization (i18n) package - taxonomy term translation
  * 
- * Translates taxonomy term for selected vocabularies running them through the localizaiton system
+ * Translates taxonomy term for selected vocabularies running them through the localization system
  * 
  * @author Jose A. Reyero, 2007
  *
@@ -15,7 +15,6 @@
  * Implementation of hook_form_alter().
  */
 function i18ntaxonomy_form_alter($form_id, &$form) {
-  drupal_set_message("i18ntaxonomy_form_alter:$form_id");
   if ($form_id == 'translation_admin_settings') {
     // Translation settings
     $translate = variable_get('i18ntaxonomy_vocabularies', array());
@@ -79,7 +78,9 @@ function i18ntaxonomy_form_alter($form_id, &$form) {
         } elseif(preg_match("/term_node_(\d+)\.tid/", $filter['field'], $matches)) {
           $vid = $matches[1];
           if ($translate[$vid]) { 
-            // Translate this vocabulary, field name is filter$index vid = $matches[1]
+            // Translate field label
+            $form['view']['#value']->exposed_filter[$index]['label'] = t($form['view']['#value']->exposed_filter[$index]['label']);
+            // Translate this vocabulary terms, field name is filter$index vid = $matches[1]
             foreach ($form["filter$index"]['#options'] as $value => $option) {
               if ($value != '**ALL**') { // ALL option should be already localized
                 $form["filter$index"]['#options'][$value] = t($option);
@@ -89,9 +90,6 @@ function i18ntaxonomy_form_alter($form_id, &$form) {
         }
       }
     }
-
-    
-   
   }
 }
 
