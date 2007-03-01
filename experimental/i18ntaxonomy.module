@@ -94,12 +94,29 @@ function i18ntaxonomy_form_alter($form_id, &$form) {
 }
 
 /**
+ * Implementation of hook_nodeapi()
+ * 
+ * This runs after taxonomy:nodeapi, so we just translate terms here
+ */
+function i18ntaxonomy_nodeapi(&$node, $op, $teaser, $page) {
+  if ($op == 'view' && array_key_exists('taxonomy', $node)) {
+    $translate = variable_get('i18ntaxonomy_vocabularies', array());
+    foreach($node->taxonomy as $index => $term) {
+      if($translate[$term->vid]) {
+        $node->taxonomy[$index]->name = t($term->name);
+      }
+    } 
+  }
+}
+
+/**
  * Implementation of hook link_alter
  * 
  * Replaces taxonomy links with translated ones.
  * This hook may be called twice for nodes. One from taxonomy_link and one from node_view
  * 
  */
+/* Not needed anymore because we are translating on nodeapi load
 function i18ntaxonomy_link_alter($node, &$links) {
   // Only for taxonomy links when hook is called from taxonomy_link
   if (count($links) and substr('taxonomy_term_', array_shift(array_keys($links))) == 0) {
