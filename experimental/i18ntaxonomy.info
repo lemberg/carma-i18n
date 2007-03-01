@@ -1,0 +1,5 @@
+name = i18n - taxonomy
+description = Translates taxonomy terms using localization system.
+dependencies = i18n translation
+package = Multilanguage - i18n - experimental
+version = 5.0 dev

@@ -1,0 +1,174 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Internationalization (i18n) package - taxonomy term translation
+ * 
+ * Translates taxonomy term for selected vocabularies running them through the localizaiton system
+ * 
+ * @author Jose A. Reyero, 2007
+ *
+ */
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function i18ntaxonomy_form_alter($form_id, &$form) {
+  drupal_set_message("i18ntaxonomy_form_alter:$form_id");
+  if ($form_id == 'translation_admin_settings') {
+    // Translation settings
+    $translate = variable_get('i18ntaxonomy_vocabularies', array());
+    $form['i18ntaxonomy_vocabularies'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#title' => t('Vocabulary Translation'),
+      '#tree' => TRUE, 
+      '#weight' => 0,
+      '#description' => t('Vocabularies to translate through localization system')
+      );
+    foreach(taxonomy_get_vocabularies() as $voc) {
+      $form['i18ntaxonomy_vocabularies'][$voc->vid] = array(
+        '#type' => 'checkbox',
+        '#title' => $voc->name,
+        '#default_value' => $translate[$voc->vid]
+      );
+    }
+  } elseif (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id && $node = $form['#node'] && isset($form['taxonomy'])) {
+    // Node form. Translate vocabularies
+    $translate = variable_get('i18ntaxonomy_vocabularies', array());
+    if (!isset($node->taxonomy)) {
+      if ($node->nid) {
+        $terms = taxonomy_node_get_terms($node->nid);
+      }
+      else {
+        $terms = array();
+      }
+    }
+    else {
+      $terms = $node->taxonomy;
+    }
+    // Regenerate the whole field for translatable vocabularies
+    foreach (element_children($form['taxonomy']) as $vid) {
+      if (is_numeric($vid) && $translate[$vid]) {
+        // Rebuild this vocabulary's form
+        $vocabulary = taxonomy_get_vocabulary($vid);
+        // Extract terms belonging to the vocabulary in question.
+        $default_terms = array();
+        foreach ($terms as $term) {
+          if ($term->vid == $vid) {
+            $default_terms[$term->tid] = $term;
+          }
+        }        
+        $form['taxonomy'][$vid] = i18ntaxonomy_form($vocabulary->vid, array_keys($default_terms));
+        $form['taxonomy'][$vid]['#weight'] = $vocabulary->weight;
+        $form['taxonomy'][$vid]['#required'] = $vocabulary->required;
+      }
+    }
+    
+  } else if($form_id == 'views_filters') {
+    $view = $form['view']['#value'];
+    if($view->exposed_filter) {
+      //var_dump($view->exposed_filter);
+      $translate = variable_get('i18ntaxonomy_vocabularies', array());
+      foreach($view->exposed_filter as $index => $filter) {
+        $matches = array();
+        if($filter['field'] == 'term_node.tid') {
+          // That's a full taxonomy box
+          // TO-DO: Translate all translatable
+        } elseif(preg_match("/term_node_(\d+)\.tid/", $filter['field'], $matches)) {
+          $vid = $matches[1];
+          if ($translate[$vid]) { 
+            // Translate this vocabulary, field name is filter$index vid = $matches[1]
+            foreach ($form["filter$index"]['#options'] as $value => $option) {
+              if ($value != '**ALL**') { // ALL option should be already localized
+                $form["filter$index"]['#options'][$value] = t($option);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    
+   
+  }
+}
+
+/**
+ * Implementation of hook link_alter
+ * 
+ * Replaces taxonomy links with translated ones.
+ * This hook may be called twice for nodes. One from taxonomy_link and one from node_view
+ * 
+ */
+function i18ntaxonomy_link_alter($node, &$links) {
+  // Only for taxonomy links when hook is called from taxonomy_link
+  if (count($links) and substr('taxonomy_term_', array_shift(array_keys($links))) == 0) {
+    $translate = variable_get('i18ntaxonomy_vocabularies', array());
+    if (array_key_exists('taxonomy', $node)) {
+      foreach ($node->taxonomy as $term) {
+        // Replace link for translatable vocabulary. Mark translated ones with 'translated'
+        if ($links['taxonomy_term_'. $term->tid] && $translate[$term->vid] && !isset($links['taxonomy_term_'. $term->tid]['translated'])) {
+          $links['taxonomy_term_'. $term->tid] = array(
+            'translated' => TRUE,
+            'title' => t($term->name),
+            'href' => taxonomy_term_path($term),
+            'attributes' => array('rel' => 'tag', 'title' => strip_tags(t($term->description)))
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Generate a form element for selecting terms from a vocabulary.
+ * Translates all translatable strings.
+ */
+function i18ntaxonomy_form($vid, $value = 0, $help = NULL, $name = 'taxonomy') {
+  $vocabulary = taxonomy_get_vocabulary($vid);
+  $help = $vocabulary->help ? t($vocabulary->help) : '';
+  if ($vocabulary->required) {
+    $blank = 0;
+  }
+  else {
+    $blank = '<'. t('none') .'>';
+  }
+
+  return _i18ntaxonomy_term_select(t(check_plain($vocabulary->name)), $name, $value, $vid, $help, intval($vocabulary->multiple), $blank);
+}
+
+// Produces translated tree
+function _i18ntaxonomy_term_select($title, $name, $value, $vocabulary_id, $description, $multiple, $blank, $exclude = array()) {
+  $tree = taxonomy_get_tree($vocabulary_id);
+  $options = array();
+
+  if ($blank) {
+    $options[0] = $blank;
+  }
+  if ($tree) {
+    foreach ($tree as $term) {
+      if (!in_array($term->tid, $exclude)) {
+        $choice = new stdClass();
+        $choice->option = array($term->tid => str_repeat('-', $term->depth) . t($term->name));
+        $options[] = $choice;
+      }
+    }
+    if (!$blank && !$value) {
+      // required but without a predefined value, so set first as predefined
+      $value = $tree[0]->tid;
+    }
+  }
+
+  return array('#type' => 'select',
+    '#title' => $title,
+    '#default_value' => $value,
+    '#options' => $options,
+    '#description' => $description,
+    '#multiple' => $multiple,
+    '#size' => $multiple ? min(9, count($options)) : 0,
+    '#weight' => -15,
+    '#theme' => 'taxonomy_term_select',
+  );
+}
