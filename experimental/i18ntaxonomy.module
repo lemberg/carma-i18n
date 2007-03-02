@@ -110,31 +110,62 @@ function i18ntaxonomy_nodeapi(&$node, $op, $teaser, $page) {
 }
 
 /**
- * Implementation of hook link_alter
+ * Implementation of hook_views_pre_view().
  * 
- * Replaces taxonomy links with translated ones.
- * This hook may be called twice for nodes. One from taxonomy_link and one from node_view
- * 
+ * Translate table header for taxonomy fields
+ * //field[i][id] = term_node_1.name, translate table header
+ * and replace handler for that field
  */
-/* Not needed anymore because we are translating on nodeapi load
-function i18ntaxonomy_link_alter($node, &$links) {
-  // Only for taxonomy links when hook is called from taxonomy_link
-  if (count($links) and substr('taxonomy_term_', array_shift(array_keys($links))) == 0) {
-    $translate = variable_get('i18ntaxonomy_vocabularies', array());
-    if (array_key_exists('taxonomy', $node)) {
-      foreach ($node->taxonomy as $term) {
-        // Replace link for translatable vocabulary. Mark translated ones with 'translated'
-        if ($links['taxonomy_term_'. $term->tid] && $translate[$term->vid] && !isset($links['taxonomy_term_'. $term->tid]['translated'])) {
-          $links['taxonomy_term_'. $term->tid] = array(
-            'translated' => TRUE,
-            'title' => t($term->name),
-            'href' => taxonomy_term_path($term),
-            'attributes' => array('rel' => 'tag', 'title' => strip_tags(t($term->description)))
-          );
-        }
+function i18ntaxonomy_views_pre_view(&$view, &$items) {
+  //var_dump($view);
+  $translate = variable_get('i18ntaxonomy_vocabularies', array());
+  foreach($view->field as $index => $data) {
+
+    $matches = array();
+    if($data['id'] == 'term_node.name') {
+      // That's a full taxonomy box
+      // TO-DO: Translate all translatable
+    } elseif(preg_match("/term_node_(\d+)\.name/", $data['id'], $matches)) {
+      $vid = $matches[1];
+      if ($translate[$vid]) { 
+        // Translate table header
+        $view->table_header[$index]['data'] = t($view->table_header[$index]['data']);
+        // Set new handler for this field
+        $view->field[$index]['handler'] = 'i18ntaxonomy_views_handler_field_allterms';
       }
     }
   }
+
+}
+
+/**
+ * Field handler for taxonomy term fields
+ * 
+ * Remake of views_handler_field_allterms with translation
+ */
+function i18ntaxonomy_views_handler_field_allterms($fieldinfo, $fielddata, $value, $data) {
+  if ($fieldinfo['vocabulary']) {
+    $terms = taxonomy_node_get_terms_by_vocabulary($data->nid, $fieldinfo['vocabulary']);
+  }
+  else {
+    $terms = taxonomy_node_get_terms($data->nid);
+  }
+  // Translate all these terms
+  foreach(array_keys($terms) as $tid) {
+    $terms[$tid]->name = t($terms[$tid]->name);
+  }
+  if ($fielddata['options'] == 'nolink') {
+    foreach ($terms as $term) {
+      $links[] = check_plain($term->name);
+    }
+    $links = !empty($links) ? implode(' | ', $links) : '';
+  }
+  else {
+    $node = new stdClass();
+    $node->taxonomy = $terms;
+    $links = theme('links', taxonomy_link('taxonomy terms', $node));
+  }
+  return $links;
 }
 
 /**
