@@ -698,7 +698,8 @@ function translation_link($type, $node = NULL, $teaser = FALSE) {
     foreach ($node->translation as $lang => $trnode) {
       // Add node link if published
       if($trnode->status) {
-        $baselang = variable_get('i18n_translation_links', 0) ? i18n_get_lang() : $lang;
+        // If language is not enabled, we'll use current language for the prefix
+        $baselang = variable_get('i18n_translation_links', 0) || !isset($languages[$lang]) ? i18n_get_lang() : $lang;
         $links['translation-'.$lang]= theme('translation_node_link', $trnode , $lang, $baselang);
       }
     }
