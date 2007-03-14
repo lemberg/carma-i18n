@@ -85,12 +85,19 @@ function i18ntaxonomy_form_alter($form_id, &$form) {
         } elseif(preg_match("/term_node_(\d+)\.tid/", $filter['field'], $matches)) {
           $vid = $matches[1];
           if ($translate[$vid]) { 
-            // Translate field label
-            // $form['view']['#value']->exposed_filter[$index]['label'] = t($form['view']['#value']->exposed_filter[$index]['label']);
             // Translate this vocabulary terms, field name is filter$index vid = $matches[1]
             foreach ($form["filter$index"]['#options'] as $value => $option) {
               if ($value != '**ALL**') { // ALL option should be already localized
-                $form["filter$index"]['#options'][$value] = t($option);
+                // This may be an object with an option property being an array (tid => name)
+                if (is_object($option) && is_array($option->option)) {
+                  foreach (array_keys($option->option) as $tid) {
+                    $option->option[$tid] = t($option->option[$tid]);
+                  }
+                  $form["filter$index"]['#options'][$value] = $option;
+                // But it used to be a plain string, so let's keep this just in case...
+                } elseif(is_string($option)) {
+                  $form["filter$index"]['#options'][$value] = t($option);
+                }
               }
             }
           }
@@ -129,8 +136,6 @@ function i18ntaxonomy_views_pre_view(&$view, &$items) {
     } elseif(preg_match("/term_node_(\d+)\.name/", $data['id'], $matches)) {
       $vid = $matches[1];
       if ($translate[$vid]) { 
-        // Translate table header
-        // $view->table_header[$index]['data'] = t($view->table_header[$index]['data']);
         // Set new handler for this field
         $view->field[$index]['handler'] = 'i18ntaxonomy_views_handler_field_allterms';
       }

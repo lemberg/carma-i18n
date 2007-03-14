@@ -1,14 +1,7 @@
 <?php
 // $Id$
 
-function i18nstrings_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      break;
-    default:
-      drupal_set_message(t('Database type not supported. This module needs manual installation.'));
-  }
+function i18ntaxonomy_install() {
   // Set module weight
   db_query("UPDATE {system} SET weight = 20 WHERE name = 'i18ntaxonomy' AND type = 'module'");
 }
