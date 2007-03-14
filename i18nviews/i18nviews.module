@@ -79,7 +79,7 @@ function i18n_views_filter_handler($filterdata, $filterinfo, &$query) {
     // If this filter is used, rollback value set in pre_query and set the new one.
     i18n_selection_mode('reset');
     i18n_selection_mode($mode);
-  }
+  } 
 }
 /**
  * Implementation of hook_views_pre_query().
@@ -87,7 +87,15 @@ function i18n_views_filter_handler($filterdata, $filterinfo, &$query) {
  * Disable language conditions for views. This is called before filter handlers
  */
 function i18n_views_pre_query(&$view) {
-    i18n_selection_mode('off');
+  // If any language filter, the language selection mode will be 'off'
+  foreach($view->exposed_filter as $filter) {
+    if($filter['field'] == 'i18n.language') {
+      $mode = 'off';
+      break;
+    }
+  }
+  // If no filter, sets again the same mode so we can just 'reset' after the query  
+  i18n_selection_mode(isset($mode) ? $mode : i18n_selection_mode());
 }
 /**
  * Implementation of hook_views_pre_view().
