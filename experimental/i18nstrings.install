@@ -11,11 +11,11 @@ CREATE TABLE  {i18n_strings} (
   `locale` varchar(12) NOT NULL,
   `text` text NOT NULL,
   PRIMARY KEY  (`strid`,`locale`)
-) DEFAULT CHARSET=utf8
+)  /*!40100 DEFAULT CHARACTER SET UTF8 */ 
 ");
 
       break;
     default:
-      drupal_set_message(t('Database type not supported. This module needs manual installation.'));
+      drupal_set_message(t('Database type not supported. This module, i18nstrings, needs manual installation.'));
   }
 }

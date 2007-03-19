@@ -14,11 +14,11 @@ CREATE TABLE  {node_data_field_ttext} (
   `nid` int(10) unsigned NOT NULL default '0',
   `value` longtext NOT NULL,
   PRIMARY KEY  (`vid`,`delta`,`name`,`language`)
-) DEFAULT CHARSET=utf8
+)  /*!40100 DEFAULT CHARACTER SET UTF8 */ 
 ");
 
       break;
     default:
-      drupal_set_message(t('Database type not supported. This module needs manual installation.'));
+      drupal_set_message(t('Database type not supported. This module, ttext, needs manual installation.'));
   }
 }

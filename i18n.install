@@ -28,7 +28,7 @@ function i18n_install() {
         language varchar(12) NOT NULL default '',
         value longtext NOT NULL,
         PRIMARY KEY (name, language)
-      )");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
       db_query("ALTER TABLE {menu} 
         ADD language VARCHAR(12) NOT NULL default ''
       ");
@@ -131,6 +131,9 @@ function i18n_update_7(){
   $items[] = update_sql("UPDATE {system} SET weight = 10 WHERE name = 'translation' AND type = 'module'");
   return $items;
 }
-
+// Update tables to utf8
+function i18n_update_8(){
+  return _system_update_utf8(array('i18n_variable'));
+}
 
 ?>
