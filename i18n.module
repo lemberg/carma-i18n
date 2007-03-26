@@ -313,18 +313,20 @@ function i18n_admin_settings() {
  */
 
 /**
- * Get localized language list
+ * Get localized language list, sort alphabetically
+ * 
  * @param $all
  *   TRUE for all languages, not only enabled
  */
 function i18n_language_list($all = FALSE) {
   static $languages;
   $type = $all ? 'name' : 'active';
-  if(isset($languages[$type])) {
+  if(!isset($languages[$type])) {
+    $languages[$type] = array_map('t', i18n_languages($type));
+    asort($languages[$type]);
     return $languages[$type];
-  } else {
-    return $languages[$type] = array_map('t', i18n_languages($type));
   }
+  return $languages[$type];
 }
 
 /**
@@ -399,6 +401,10 @@ function i18n_languages($key = 'active') {
       $languages['active'] = $languages['name'];
       $languages['native'] = $languages['name'];
     }
+    // Sort everything alphabetically
+    asort($languages['name']);
+    asort($languages['active']);
+    asort($languages['native']);
   }
   return $key ? $languages[$key] : $languages;
 }
