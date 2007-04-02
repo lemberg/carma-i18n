@@ -15,8 +15,8 @@ function i18nblocks_help($section = 'admin/help#i18nblocks' ) {
     case 'admin/help#i18nblocks':
       return t('<h2>This module provides support for multilingual blocks</h2>
         <p>These are not real blocks, but metablocks that group together a number of normal blocks and display the right one depending on language</p>
-        <p>In the block administration pages you will find a new tab for creating "Multilingual blocks". Set them up as usual (region, visibility, etc...) and then click on configuration, to define which one of the other blocks will be shown for each language.</p>
-        ' );
+        <p>In the block administration pages you will find a new tab for creating "Multilingual blocks". Set them up as usual and define which one of the other blocks will be shown for each language.</p>
+        ');
     case 'admin/build/block/i18n':
       return t('<p>These are not real blocks, but metablocks that group together a number of normal blocks and display the right one depending on language</p>');
   }
@@ -143,7 +143,7 @@ function i18nblocks_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           $metablock['nids'][$node->nid] = $node->nid;
           // Recreate the translation block. Or delete if no blocks.
           $metablock['i18nblocks'] = array();
-          $result = db_query("SELECT * FROM {i18n_node} i INNER JOIN {nodeasblock} n ON i.nid = n.nid WHERE i.nid IN (%s) ", implode(',',$node->i18nblock['nids']));
+          $result = db_query("SELECT * FROM {i18n_node} i INNER JOIN {nodeasblock} n ON i.nid = n.nid WHERE i.nid IN (%s) ", implode(',',$metablock['nids']));
           while($trn = db_fetch_object($result)) {
             $metablock['i18nblocks'][$trn->language] = "nodeasblock:$trn->nid";
           }
@@ -176,11 +176,15 @@ function i18nblocks_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
  * Helper function: get related nodeasblock block
  */
 function _i18nblocks_nodeasblock($node) {
+  $nids = $translations = array();
   if ($node->trid) { // It is a translation
     $translations = translation_node_get_translations(array('trid' => $node->trid));
-    foreach($translations as $lang => $trn) {
-      $nids[$trn->nid] = $trn->nid;
-    }
+  } elseif($node->translation_nid) { // Translation is just being created
+    $translations = translation_node_get_translations(array('nid' => $node->translation_nid), TRUE);
+    $nids[$node->translation_nid] = $node->translation_nid;
+  }
+  foreach($translations as $lang => $trn) {
+    $nids[$trn->nid] = $trn->nid;
   }
   if($node->nid) { // Updating existing node, no translations yet
     $nids[$node->nid] = $node->nid;
