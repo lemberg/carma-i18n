@@ -25,7 +25,7 @@ function i18nmenu_translate_all(){
   global $_menu;
   global $user;
   global $locale;
-  $cid = "menu:$user->uid:$locale";
+  $cid = "$user->uid:$locale";
   cache_clear_all($cid, 'cache_menu');
   // Translate all user defined meny items
   foreach($_menu['items'] as $mid => $item) {
@@ -49,6 +49,5 @@ function i18nmenu_help($section = 'admin/help#i18nmenu' ) {
         <li>Use the localization system to translate menu item strings</li>
         </ul>' );
   }
-  return $output;
 }
 

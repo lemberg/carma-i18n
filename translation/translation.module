@@ -958,9 +958,9 @@ function translation_url($url, $lang) {
     }
   }
   // or a taxonomy term
-  elseif (preg_match("/^(taxonomy\/term\/)([^\/]*)$/",$url,$matches)) {//or at a taxonomy-listing?
+  elseif (preg_match("/^(taxonomy\/term\/)([^\/]*)(.*)$/",$url,$matches)) {//or at a taxonomy-listing?
     if ($str_tids = translation_taxonomy_tids($matches[2], $lang)) {
-      $url = "taxonomy/term/$str_tids";
+      $url = "taxonomy/term/$str_tids". $matches[3];
     }
   }
   
