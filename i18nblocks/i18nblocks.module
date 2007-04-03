@@ -94,6 +94,7 @@ function i18nblocks_form_alter($form_id, &$form) {
           }
         }
       }
+      // Override first level value
       foreach(array('status', 'region', 'weight', 'visibility', 'pages', 'custom', 'title') as $field) {
         if($form['nodeasblockset'][$field]['#type'] == 'value') {
           $form['nodeasblockset'][$field]['#value'] = $block->$field;
@@ -108,7 +109,8 @@ function i18nblocks_form_alter($form_id, &$form) {
         'type' => 'nodeasblock',
         'info' => '',
         'i18nblocks' => array(),
-        'delta' => ''
+        'delta' => '',
+        'new' => TRUE
       );
     }  
     $form['i18nblock'] = array('#type' => 'value', '#value' => $i18nblock);
@@ -152,8 +154,9 @@ function i18nblocks_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
             if(!$metablock['info']) {
               $metablock['info'] = t('Translation: !title', array('!title' => $node->title));
             } 
-            if (!$metablock['delta']) {
-              $metablock = i18nblocks_save($metablock);
+            $metablock = i18nblocks_save($metablock);
+            // Only if the block is new, rehash block table
+            if (isset($metablock['new'])) {
               _block_rehash();
             }
             if($block = $metablock['block']) {
@@ -173,7 +176,7 @@ function i18nblocks_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
- * Helper function: get related nodeasblock block
+ * Helper function: collect translation nids and get related nodeasblock block
  */
 function _i18nblocks_nodeasblock($node) {
   $nids = $translations = array();
