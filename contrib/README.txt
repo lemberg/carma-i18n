@@ -7,15 +7,16 @@ README.txt
 
 These modules depend on i18n.module and provide some additional features
 
-i18nblocks module
------------------
-Provides language dependant blocks. 
-You can define meta-blocs that will show up a different block depending on language.
-
-i18nmenu module
+i18nmenu.module
 ---------------
 Translates menu items.
 Runs all admin editable menu item names through localization.
+
+i18ntaxonomy.module
+------------------
+Translates taxonomy terms running them through localization.
+Can be enabled/disabled per vocabulary.
+Provides some views support.
 
 i18nfilter module [Not yet updated for 4.7]
 ----------------------------------
