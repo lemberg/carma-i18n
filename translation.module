@@ -312,7 +312,7 @@ function translation_node_page() {
       break;
     case 'remove':
     case t('Remove'):
-      db_query("UPDATE {i18n_node} SET trid = NULL WHERE nid=%d", $node->nid);
+      db_query("UPDATE {i18n_node} SET trid = 0 WHERE nid=%d", $node->nid);
       drupal_set_message("The node has been removed from the translation set");
       drupal_goto("node/$node->nid/translation");
     default:
