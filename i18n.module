@@ -179,7 +179,7 @@ function i18n_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
       case 'insert':
       case 'update':
         db_query("DELETE FROM {i18n_node} WHERE nid=%d",$node->nid);
-        if($node->language){
+        if ($node->language){
           // Assign a trid from the beginning
           db_query("INSERT INTO {i18n_node} (nid, trid, language, status) VALUES(%d, '%d', '%s', '%d')", $node->nid, $node->trid, $node->language, $node->i18n_status);
         }
@@ -200,9 +200,24 @@ function i18n_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
           menu_rebuild();
           unset($node->menu); // Avoid further processing by menu module
         }
+        // Pathauto integration. Dynamic replacement of variables to allow different patterns per language
+        if (module_exists('path') && module_exists('pathauto')) {
+          // Language for pathauto variables is either node language or default language
+          $language = $node->language ? $node->language : i18n_default_language();
+          if ($language != i18n_get_lang()) {
+            i18n_variable_init($language, 'pathauto_node');
+          }
+        }
         break;
       case 'delete': 
         db_query('DELETE FROM {i18n_node} WHERE nid=%d', $node->nid);
+        break;
+      case 'prepare':
+        // Book pages, set the right language nodes and outlines
+        if (arg(3) == 'parent' && is_numeric(arg(4)) && ($parent = node_load(arg(4))) && $parent->language) {
+          $node->language = $parent->language;
+          i18n_selection_mode('node', $parent->language);
+        } 
         break;
       }
   }   
@@ -974,15 +989,22 @@ function i18n_variable_form_submit($form_id, $form_values) {
 }
 
 /**
- * Initialization of multilingual variables 
+ * Initialization of multilingual variables
+ * 
+ * @param $language
+ *   Language to retrieve variables. Defaults to current language
+ * @param $prefix
+ *   Variable name prefix to load just a selected group of variables
  */
-function i18n_variable_init(){
+function i18n_variable_init($language = NULL, $prefix = ''){
   global $conf;
   global $i18n_conf;
-  $lang = _i18n_get_lang();
+  $language = $language ? $language : _i18n_get_lang();
   if($i18n_variables = variable_get('i18n_variables', '')){
-    $i18n_conf = array();
-    $variables = _i18n_variable_init();
+    if (!$i18n_conf) {
+      $i18n_conf = array();
+    }
+    $variables = _i18n_variable_init($language, $prefix);
     foreach($i18n_variables as $name){
       $i18n_conf[$name] = isset($variables[$name]) ? $variables[$name] : (isset($conf[$name]) ? $conf[$name] : '');
     }
@@ -1085,18 +1107,18 @@ function _i18n_language_select($value ='', $description ='', $weight = -20, $lan
 /**
  * Load language variables into array
  */
-function _i18n_variable_init(){  
-  $lang = _i18n_get_lang();
+function _i18n_variable_init($language, $prefix = ''){  
   $variables = array();
-  if ($cached = cache_get('variables:'.$lang)) {
+  $cacheid = 'variables:'.$language.($prefix ? ':'.$prefix : '');
+  if ($cached = cache_get($cacheid)) {
     $variables = unserialize($cached->data);
   }
   else {
-    $result = db_query("SELECT * FROM {i18n_variable} WHERE language='%s'", $lang);
+    $result = db_query("SELECT * FROM {i18n_variable} WHERE language='%s' AND name LIKE '%s%'", $language, $prefix);
     while ($variable = db_fetch_object($result)) {
       $variables[$variable->name] = unserialize($variable->value);
     }
-    cache_set('variables:'.$lang, 'cache', serialize($variables));
+    cache_set($cacheid, 'cache', serialize($variables));
   }
   return $variables;
 }

@@ -311,7 +311,10 @@ function translation_node_prepare(&$node, $sourcenid, $language) {
       }
     }
   }
-  
+  // Book outlines, translating parent page if exists
+  if ($source->parent && ($translations = translation_node_get_translations(array('nid' => $source->parent))) && isset($translations[$language])) {
+    $node->parent = $translations[$language]->nid;
+  }  
   // Translations are taken from source node          
   $node->translation = $source->translation;
   $node->translation[$source->language] = $source;
