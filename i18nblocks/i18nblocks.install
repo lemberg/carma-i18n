@@ -23,12 +23,23 @@ function i18nblocks_install() {
   `delta` varchar(32) NOT NULL default '0',
   PRIMARY KEY  (`bid`,`language`)
 ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      db_query("UPDATE {system} SET weight = 20 WHERE name = 'i18nblocks' AND type = 'module'");
       break;
     case 'pgsql':
-      drupal_set_message("PGSQL automatic install is not supported for i18nblocks module");    
+      db_query("CREATE TABLE {i18n_blocks} (
+ delta varchar(32) NOT NULL DEFAULT '0',
+ info varchar(64) NOT NULL DEFAULT '',
+ type varchar(64) NOT NULL DEFAULT '',
+ param int4 NOT NULL DEFAULT 0,
+ PRIMARY KEY (delta))");
+      db_query("CREATE TABLE {i18n_blocks_i18n} (
+ bid serial4 NOT NULL,
+ language varchar(12) NOT NULL DEFAULT '',
+ module varchar(64) NOT NULL DEFAULT '',
+ delta varchar(32) NOT NULL DEFAULT '0',
+ PRIMARY KEY (bid,language))");
       break;
   }
+  db_query("UPDATE {system} SET weight = 20 WHERE name = 'i18nblocks' AND type = 'module'");
 }
 
 /**

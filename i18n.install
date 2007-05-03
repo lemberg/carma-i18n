@@ -15,7 +15,7 @@ function i18n_install() {
         language VARCHAR(12) NOT NULL default '',  
         status smallint(6) NOT NULL default '0',
         PRIMARY KEY (nid) 
-      )");
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */");
       db_query("ALTER TABLE {term_data}
         ADD language varchar(12) NOT NULL default '',
         ADD trid int(10) unsigned NOT NULL default '0'
