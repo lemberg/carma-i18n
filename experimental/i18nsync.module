@@ -18,13 +18,26 @@
  * Implementation of hook_form_alter().
  */
 function i18nsync_form_alter($form_id, &$form) {
-  if ($form_id == 'taxonomy_form_vocabulary') { // Taxonomy vocabulary
-    $nodesync = variable_get('i18n_vocabulary_nodesync', array());
-    $form['i18n']['nodesync'] = array(
-      '#type' => 'checkbox', '#title' => t('Synchronize node translations'),
-      '#default_value' => isset($form['vid']) && is_numeric($form['vid']['#value']) && $nodesync[$form['vid']['#value']],
-      '#description' => t('Synchronize terms of this vocabulary for node translations.')
-    ); 
+  // Taxonomy vocabulary form
+  switch ($form_id) {
+    case 'taxonomy_form_vocabulary':
+      $nodesync = variable_get('i18n_vocabulary_nodesync', array());
+      $form['i18n']['nodesync'] = array(
+        '#type' => 'checkbox', '#title' => t('Synchronize node translations'),
+        '#default_value' => isset($form['vid']) && is_numeric($form['vid']['#value']) && $nodesync[$form['vid']['#value']],
+        '#description' => t('Synchronize terms of this vocabulary for node translations.')
+      );
+      break;
+    case 'node_type_form':
+      $type = (isset($form['old_type']) && isset($form['old_type']['#value'])) ? $form['old_type']['#value'] : NULL;
+      $form['workflow']['i18nsync_nodeapi'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Synchronize translations'),
+        '#default_value' => variable_get('i18nsync_nodeapi_'. $type, array()),
+        '#options' => i18nsync_node_available_fields($type),
+        '#description' => t('Select which fields to synchronize for all translations of this content type.')
+      );
+      break;
   }      
 }
 
@@ -50,12 +63,14 @@ function i18nsync_taxonomy($op, $type = NULL, $edit = NULL) {
  * Implementation of hook_nodeapi().
  */
 function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  if (variable_get("i18n_node_$node->type", 0)) {
+  global $i18nsync; // This variable will be true when a sync operation is in progress
+  // Only for nodes that have language and belong to a translation set.
+  if (variable_get("i18n_node_$node->type", 0) && $node->language && $node->trid && !$i18nsync) {
     switch ($op) {
       case 'insert':
       case 'update':
         // Taxonomy synchronization
-        if($node->language && $node->trid && $sync = variable_get('i18n_vocabulary_nodesync', array())) {
+        if ($sync = variable_get('i18n_vocabulary_nodesync', array())) {
           // Get vocabularies synchronized for this node type
           $result = db_query("SELECT v.* FROM {vocabulary} v INNER JOIN {vocabulary_node_types} n ON v.vid = n.vid WHERE n.type = '%s' AND v.vid IN (%s)", $node->type, implode(',', array_keys($sync)));
           $count = 0;
@@ -64,15 +79,36 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
             $count++;
           }
           if ($count) {
-            drupal_set_message(t('Node translations have been synchronized.'));
+            drupal_set_message(t('Node taxonomy has been synchronized.'));
           }
+        } // No need to refresh cache. It will be refreshed after insert/update anyway
+        
+        // Let's go with field synchronization
+        $fields = variable_get('i18nsync_nodeapi_'.$node->type, array());
+        if (count($fields) && $translations = translation_node_get_translations(array('nid' => $node->nid), FALSE)) {
+          $i18nsync = TRUE;
+          foreach ($translations as $trnode) {
+            i18nsync_node_translation($node, $trnode, $fields);
+          }
+          $i18nsync = FALSE;
+          drupal_set_message(t('All %count node translations have been synchronized', array('%count' => count($translations))));
         }
-        // No need to refresh cache. It will be refreshed on node insert/update anyway
         break;
     }
   }
 }
 
+function i18nsync_node_translation($node, $translation, $fields) {
+  // Load full node, we need all data here
+  $translation = node_load($translation->nid);
+  foreach ($fields as $field) {
+    if (isset($node->$field)) {
+      // TO-DO: Handle special fields here with a switch statement
+      $translation->$field = $node->$field;
+    }
+  }
+  node_save($translation);
+}
 /**
  * Actual synchronization for node, vocabulary
  * 
@@ -107,6 +143,30 @@ function i18nsync_node_taxonomy($node, $vocabulary) {
 }
 
 
-
+function i18nsync_node_available_fields($type) {
+  // Default node fields
+  $fields = variable_get('i18nsync_fields_node', array());
+  $fields += array(
+      'status' => t('Status'),
+      'promote' => t('Promote'),
+      'moderate' => t('Moderate'),
+      'sticky' => t('Sticky')
+  );
+  // If no type defined yet, that's it
+  if (!$type) {
+    return $fields;
+  }
+  // Get variable for this node type
+  $fields += variable_get("i18nsync_fields_$type", array());
+  // Event fields
+  if (variable_get('event_nodeapi_'. $type, 'never') != 'never') {
+    $fields += array(
+      'event_start' => t('Event start'),
+      'event_end' => t('Event end'),
+      'timezone' => t('Timezone')
+    );
+  }
+  return $fields;
+}
 
 
