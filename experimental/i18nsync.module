@@ -136,9 +136,9 @@ function i18nsync_node_taxonomy($node, $vocabulary) {
   db_query("INSERT INTO {term_node}(tid, nid) SELECT tdt.tid, n.nid " .
         " FROM {i18n_node} n ,  {term_data} tdt " . // This will be term data translations
         " INNER JOIN {term_data} td ON tdt.trid = td.trid " . // Same translation set
-        " INNER JOIN {term_node} tn ON tn.tid = td.tid " .
-        " INNER JOIN {term_data} tnd ON tn.tid = tnd.tid ".
-        " WHERE tdt.language = n.language AND n.nid != %d AND tn.nid = %d AND n.trid = %d AND td.vid = %d",
+        " INNER JOIN {term_node} tn ON tn.tid = td.tid " . 
+        " WHERE tdt.trid AND tdt.language = n.language " . // trid cannot be 0 or NULL
+        " AND n.nid != %d AND tn.nid = %d AND n.trid = %d AND td.vid = %d",
          $node->nid, $node->nid, $node->trid, $vocabulary->vid);  
 }
 
