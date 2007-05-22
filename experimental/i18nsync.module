@@ -119,10 +119,19 @@ function i18nsync_node_taxonomy($node, $vocabulary) {
   if ($vocabulary->language || !$node->nid || !$node->trid || !$node->language || !$vocabulary->vid) return;
   
   // Reset all terms for this vocabulary for other nodes in the translation set
+  // First delete all terms without language
   db_query("DELETE FROM {term_node} WHERE nid != %d ".
     " AND nid IN (SELECT nid FROM {i18n_node} WHERE trid = %d) ". 
-    " AND tid IN (SELECT tid FROM {term_data} WHERE vid = %d)", 
+    " AND tid IN (SELECT tid FROM {term_data} WHERE (language = '' OR language IS NULL) AND vid = %d) ", 
     $node->nid, $node->trid, $vocabulary->vid);
+    
+  // Now delete all terms which have a translation in the node language
+  // We don't touch the terms that have language but no translation
+  db_query("DELETE FROM {term_node} WHERE nid != %d ".
+    " AND nid IN (SELECT nid FROM {i18n_node} WHERE trid = %d) ". 
+    " AND tid IN (SELECT td.tid FROM {term_data} td INNER JOIN {term_data} tt ON td.trid = tt.trid ".
+    " WHERE td.vid = %d AND td.trid AND tt.language = '%s') ", // These are all the terms with translation
+    $node->nid, $node->trid, $vocabulary->vid, $node->language);   
   
   // Copy terms with no language
   db_query("INSERT INTO {term_node}(tid, nid) SELECT tn.tid, n.nid " .
