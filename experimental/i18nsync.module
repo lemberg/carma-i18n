@@ -30,17 +30,41 @@ function i18nsync_form_alter($form_id, &$form) {
       break;
     case 'node_type_form':
       $type = (isset($form['old_type']) && isset($form['old_type']['#value'])) ? $form['old_type']['#value'] : NULL;
-      $form['workflow']['i18nsync_nodeapi'] = array(
-        '#type' => 'checkboxes',
+      
+      $current = i18nsync_node_fields($type);
+
+      $form['workflow']['i18n']['i18nsync_nodeapi'] = array(
+        '#type' => 'fieldset', '#tree' => TRUE,
         '#title' => t('Synchronize translations'),
-        '#default_value' => variable_get('i18nsync_nodeapi_'. $type, array()),
-        '#options' => i18nsync_node_available_fields($type),
+        '#collapsible' => TRUE,
+        '#collapsed' => !count($current),
         '#description' => t('Select which fields to synchronize for all translations of this content type.')
       );
+      // Each set provides title and options. We build a big checkboxes control for it to be
+      // saved as an array. Special themeing for group titles.
+      foreach (i18nsync_node_available_fields($type) as $group => $data) {
+        $title = $data['#title'];
+        foreach ($data['#options'] as $field => $name) {
+          $form['workflow']['i18n']['i18nsync_nodeapi'][$field] = array(
+            '#group_title' => $title,
+            '#title' => $name,
+            '#type' => 'checkbox',
+            '#default_value' => in_array($field, $current),
+            '#theme' => 'i18nsync_workflow_checkbox',
+          );
+          $title = '';  
+        }     
+      }
+
       break;
   }      
 }
 
+function theme_i18nsync_workflow_checkbox($element){
+  $output = $element['#group_title'] ? '<div class="description">'.$element['#group_title'].'</div>' : '';
+  $output .= theme('checkbox', $element);
+  return $output;
+}
 /**
  * Implementation of hook taxonomy.
  */
@@ -61,9 +85,12 @@ function i18nsync_taxonomy($op, $type = NULL, $edit = NULL) {
 
 /**
  * Implementation of hook_nodeapi().
+ * 
+ * Note that we avoid getting node parameter by reference
  */
-function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+function i18nsync_nodeapi($node, $op, $a3 = NULL, $a4 = NULL) {
   global $i18nsync; // This variable will be true when a sync operation is in progress
+
   // Only for nodes that have language and belong to a translation set.
   if (variable_get("i18n_node_$node->type", 0) && $node->language && $node->trid && !$i18nsync) {
     switch ($op) {
@@ -71,6 +98,7 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
       case 'update':
         // Taxonomy synchronization
         if ($sync = variable_get('i18n_vocabulary_nodesync', array())) {
+          
           // Get vocabularies synchronized for this node type
           $result = db_query("SELECT v.* FROM {vocabulary} v INNER JOIN {vocabulary_node_types} n ON v.vid = n.vid WHERE n.type = '%s' AND v.vid IN (%s)", $node->type, implode(',', array_keys($sync)));
           $count = 0;
@@ -84,9 +112,12 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         } // No need to refresh cache. It will be refreshed after insert/update anyway
         
         // Let's go with field synchronization
-        $fields = variable_get('i18nsync_nodeapi_'.$node->type, array());
-        if (count($fields) && $translations = translation_node_get_translations(array('nid' => $node->nid), FALSE)) {
+        if (($fields = i18nsync_node_fields($node->type)) && $translations = translation_node_get_translations(array('nid' => $node->nid), FALSE)) {
+          // We want to work with a fresh copy of this node, so we load it again bypassing cache.
+          // This is to make sure all the other modules have done their stuff and the fields are right.
+          $node = node_load(array('nid' => $node->nid));
           $i18nsync = TRUE;
+
           foreach ($translations as $trnode) {
             i18nsync_node_translation($node, $trnode, $fields);
           }
@@ -102,9 +133,21 @@ function i18nsync_node_translation($node, $translation, $fields) {
   // Load full node, we need all data here
   $translation = node_load($translation->nid);
   foreach ($fields as $field) {
-    if (isset($node->$field)) {
-      // TO-DO: Handle special fields here with a switch statement
-      $translation->$field = $node->$field;
+    switch($field) {
+      case 'parent': // Book outlines, translating parent page if exists
+        if (isset($node->parent) && $node->parent) {
+          if (($translations = translation_node_get_translations(array('nid' => $node->parent))) && isset($translations[$node->language])) {
+            $translation->parent = $translations[$translation->language]->nid;
+          }
+        } else {
+          // Parent is top level or none
+          $translation->parent = 0;
+        }
+        break;
+      default: // For fields that don't need special handling
+        if (isset($node->$field)) {
+          $translation->$field = $node->$field;
+        }
     }
   }
   node_save($translation);
@@ -151,17 +194,44 @@ function i18nsync_node_taxonomy($node, $vocabulary) {
          $node->nid, $node->nid, $node->trid, $vocabulary->vid);  
 }
 
-
+/**
+ * Returns list of fields to synchronize for a given content type
+ * 
+ * @param $type
+ *   Node type
+ */
+function i18nsync_node_fields($type) {
+  return variable_get('i18nsync_nodeapi_'.$type, array());
+}
+/**
+ * Returns list of available fields for given content type
+ * 
+ * @param $type
+ *   Node type
+ * @param $tree
+ *   Whether to return in tree form or FALSE for flat list
+ */
 function i18nsync_node_available_fields($type) {
   // Default node fields
-  $fields = variable_get('i18nsync_fields_node', array());
-  $fields += array(
+  $fields['node']['#title'] = t('Standard node fields.');
+  $options = variable_get('i18nsync_fields_node', array());
+  $options += array(
+      'author' => t('Author'),
       'status' => t('Status'),
       'promote' => t('Promote'),
       'moderate' => t('Moderate'),
-      'sticky' => t('Sticky')
+      'sticky' => t('Sticky'),
+      'revision' => t('Revision (Create also new revision for translations)'),
+      'parent' => t('Book outline (With the translated parent)'),
   );
+  if (module_exists('comment')) {
+    $options['comment'] = t('Comment settings');
+  }
+  if (module_exists('upload') || module_exists('image')) {
+    $options['files'] = t('File attachments (and images)');
+  }
   // If no type defined yet, that's it
+  $fields['node']['#options'] = $options;
   if (!$type) {
     return $fields;
   }
@@ -169,13 +239,40 @@ function i18nsync_node_available_fields($type) {
   $fields += variable_get("i18nsync_fields_$type", array());
   // Event fields
   if (variable_get('event_nodeapi_'. $type, 'never') != 'never') {
-    $fields += array(
+    $fields['event']['#title'] = t('Event fields');
+    $fields['event']['#options'] = array(
       'event_start' => t('Event start'),
       'event_end' => t('Event end'),
       'timezone' => t('Timezone')
     );
   }
+  // Get CCK fields
+  if (($content = module_invoke('content', 'types', $type)) && isset($content['fields'])) {
+    // Get context information
+    $info = module_invoke('content', 'fields', NULL, $type);
+    $fields['cck']['#title'] = t('CCK fields');
+    foreach ($content['fields'] as $name => $data) {
+      $fields['cck']['#options'][$data['field_name']] = $data['widget']['label'];      
+    }
+  }
   return $fields;
 }
 
-
+/*
+ * Sample CCK field definition
+'field_text' => 
+    array
+      'field_name' => string 'field_text' (length=10)
+      'type' => string 'text' (length=4)
+      'required' => string '0' (length=1)
+      'multiple' => string '1' (length=1)
+      'db_storage' => string '0' (length=1)
+      'text_processing' => string '0' (length=1)
+      'max_length' => string '' (length=0)
+      'allowed_values' => string '' (length=0)
+      'allowed_values_php' => string '' (length=0)
+      'widget' => 
+        array
+          ...
+      'type_name' => string 'test' (length=4)
+*/

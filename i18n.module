@@ -821,12 +821,17 @@ function i18n_form_alter($form_id, &$form) {
      
      case 'node_type_form':
        $node_type = $form['old_type']['#value'];
-       $form['workflow']['i18n_node'] = array(
+       // Build a fieldset to allow some more options here
+       $form['workflow']['i18n'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Multilingual options'),
+       );
+       $form['workflow']['i18n']['i18n_node'] = array(
          '#type' => 'radios',
-         '#title' => t('Multilingual support'),
+         '#title' => t('Multilingual content'),
          '#default_value' => variable_get('i18n_node_'.$node_type, 0),
          '#options' => _i18n_content_languages(),
-         '#description' => t('Enables language field and multilingual support for this content type.'),
+         '#description' => t('Enables language field and translations for this content type.'),
        );
        break;
      case '_locale_admin_manage_screen': // Locale language settings
