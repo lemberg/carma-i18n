@@ -53,6 +53,13 @@ function translation_menu($may_cache) {
 
   if ($may_cache) {
     $items[] = array(
+      'path' => 'translation/autocomplete',
+      'title' => t('translation node autocomplete'),
+      'callback' => 'translation_node_autocomplete',
+      'access' => user_access('translate nodes'),
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array(
       'path' => 'admin/settings/i18n/translation',
       'title' => t('Translation'),
       'callback' => 'drupal_get_form',
@@ -373,13 +380,42 @@ function translation_node_form($node, $lang, $list){
   $form['trid'] = array('#type' => 'hidden', '#value' => $node->trid);
   $languages = i18n_node_language_list($node);
 
-  $form['nodes']['nid'] = array(
-   '#type' => 'radios', '#title' => t('Select translation for %language', array('%language' => $languages[$lang])), 
+  $form['select'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Select translation for %language', array('%language' => $languages[$lang]))
+  );
+  $form['select']['lookup'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Search for node'),
+    '#description' => t('Enter node id or title'),
+    '#size' => 80,
+    '#maxlength' => 254,
+    '#autocomplete_path' => 'translation/autocomplete/' . $lang,
+  );
+  $form['select']['nodes']['nid'] = array(
+   '#type' => 'radios', '#title' => t('Or select from the list'), 
        '#default_value' => isset($node->translation[$lang]) ? $node->translation[$lang]->nid : '',
        '#options' => $list);
-  $form['pager'] = array('#value' => theme('pager'));
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
+  $form['select']['pager'] = array('#value' => theme('pager'));
+  $form['select']['submit'] = array('#type' => 'submit', '#value' => t('Save'));
   return $form;
+}
+
+/**
+* Menu callback: autocomplete for selecting node translations
+*/
+function translation_node_autocomplete($lang = NULL, $string = NULL){
+  $languages = i18n_supported_languages();
+  if ($lang && $string && in_array($lang, array_keys($languages))) {
+    $matches = array();
+    $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {i18n_node} i ON n.nid = i.nid WHERE (LOWER(n.title) LIKE LOWER('%s%%') OR n.nid = %d) AND i.language = '%s'"), $string, $string, $lang);
+    while($nodelist = db_fetch_object($result)){
+      $title = check_plain($nodelist->title);
+      $matches["$nodelist->nid - $title"] = "$title [nid=$nodelist->nid]";
+    }
+    print drupal_to_js($matches);
+  }
+  exit();
 }
 
 /**
@@ -630,7 +666,11 @@ function translation_node_overview($node) {
  * Form to remove node from translation set
  */
 function translation_node_remove($node) {
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Remove'), '#suffix' => t('Remove node from this translation set'));
+  $form['remove'] = array('#type' => 'fieldset',
+    '#title' => t('Remove from translation'),
+    '#description' => t('This will just unlink the node from this translation set.')
+  );
+  $form['remove']['submit'] = array('#type' => 'submit', '#value' => t('Remove'));
   $form['#action'] = url('node/'.$node->nid.'/translation/remove');
   return $form;
 }
@@ -661,9 +701,15 @@ function translation_node_form_submit($form_id, $form_values){
   $op = $_POST['op'];
   $source_nid = $form_values['source_nid'];
   $language = $form_values['language'];
-  $nid = $form_values['nid'];
-  if( $source_nid && $language && $nid ) {
-   if($trid = $form_values['trid']){
+  
+  if($form_values['nid']) {
+    $nid = $form_values['nid'];
+  }
+  if ($form_values['lookup'] && ($number = intval($form_values['lookup']))) {
+    $nid = $number;
+  }
+  if ($source_nid && $language && $nid && ($node = node_load($nid)) && $node->language == $language) {
+    if($trid = $form_values['trid']){
       // Delete old translations
       db_query("UPDATE {i18n_node} SET trid = 0 WHERE trid = %d AND language = '%s'", $trid, $language);
     } else {

@@ -159,7 +159,7 @@ function i18n_menu($may_cache) {
         $language = $node->language;
       }
       if($language) i18n_selection_mode('node', db_escape_string($language));
-    } elseif(arg(0) == 'admin' && user_access('administer all languages')) {
+    } elseif(arg(0) == 'admin' && arg(0) == 'content' && user_access('administer all languages')) {
       // No restrictions for administration pages
       i18n_selection_mode('off');
     }
