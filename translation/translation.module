@@ -290,9 +290,77 @@ function translation_nodeapi(&$node, $op, $arg = 0) {
         }
         break;        
     }
+    // Add nat integration
+    if (module_exists('nat')) translation_nodeapi_nat($node, $op);
   }
 }
 
+/**
+ * NAT (Node As Term) integration for node translations
+ * 
+ * This will run after i18n, translation and nat have done their job
+ */
+function translation_nodeapi_nat(&$node, $op) {
+  $nat_config = variable_get('nat_config', array());
+  // TO-DO: nat_get_terms has caching, look into it
+  if (($op == 'insert' || $op == 'update') && isset($nat_config['types'][$node->type]) && !empty($nat_config['types'][$node->type]) && ($nat_terms = translation_nat_get_terms($node->nid))) {
+    //drupal_set_message("DEBUG:translation_nodeapi_nat op=$op trid=$node->trid");
+    $translations = $term_trids = array();
+    // First of all, just update language for this node's terms.
+    foreach ($nat_terms as $term) {
+      db_query("UPDATE {term_data} SET language = '%s' WHERE tid = %d", $node->language, $term->tid);
+      $translations[$term->vid][$node->language] = $term;
+      if ($term->trid) {
+        $term_trids[$term->vid] = $term->trid;
+      }
+    }
+    // If the node is not in a translation set, there's nothing else to do
+    if ($node->trid) {
+      // Get node translations
+      $node_translations = $node->trid ? translation_node_get_translations(array('nid' => $node->nid)) : array();
+      // Now we build an array of the form $translations[vid][language] = $term,
+      foreach ($node_translations as $trnode) {
+        foreach (nat_get_terms($trnode->nid) as $term) {
+          // If the term doesn't have a language we set that of the node it belongs to.
+          // This should work for previously created terms.
+          if (!$term->language) {
+            $term->language = $trnode->language;
+            db_query("UPDATE {term_data} SET language = '%s' WHERE tid = %d", $term->language, $term->tid);
+          }
+          $translations[$term->vid][$term->language] = $term;
+          if ($term->trid) {
+            // This will have some problem in the cases where terms for different nodes are in different
+            // translation sets. That shouldn't happen though; so we force all of them in the same set.
+            $term_trids[$term->vid] = $term->trid;
+          }
+        }
+      }
+      // Update the terms, assigning translations in the same vocabulary if possible
+      foreach ($nat_terms as $term) {
+        if (count($translations[$term->vid]) > 1) {
+          $translation_set = $translations[$term->vid];
+          $trid = isset($term_trids[$term->vid]) ? $term_trids[$term->vid] : 0;
+          translation_taxonomy_save($translation_set, $trid);
+          //drupal_set_message("DEBUG:translation_nodeapi_nat, trid=$trid data=".print_r($translation_set, TRUE));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Like nat_get_terms() but without caching
+ */
+function translation_nat_get_terms($nid) {
+  $return = array();
+
+  $result = db_query("SELECT td.* FROM {nat} n INNER JOIN {term_data} td USING (tid) WHERE n.nid = %d", $nid);
+  while ($term = db_fetch_object($result)) {
+    $return[$term->tid] = $term;
+  }
+  
+  return $return;  
+}
 /**
  * Prepare node for translation
  */
@@ -930,25 +998,36 @@ function translation_taxonomy_term_form($vid, $trid = NULL, $edit = array()) {
  * Form callback: Process vocabulary translation form
  */
 function translation_taxonomy_term_form_submit($form_id, $form_values) {
-  $trid = $form_values['trid'];
-  $languages = i18n_supported_languages();
-  $translations = array();
-  // Delete old translations
-  if($trid){
-    db_query("UPDATE {term_data} SET trid = 0 WHERE trid= %d", $trid);
-  }
-  foreach ($languages as $lang => $name) {
-    if (is_numeric($form_values[$lang]['tid'])) {
-      $translations[$lang] = $form_values[$lang]['tid'];
-    }
-  }
-  if(count($translations)) {
-    $trid = is_numeric($trid) ? $trid : db_next_id('{term_data}_trid');
-    db_query('UPDATE {term_data} SET trid=%d WHERE tid IN(%s)', $trid, implode(',',$translations));
-  }
+  translation_taxonomy_save($form_values, $form_values['trid']);
   drupal_set_message(t('Term translations have been updated'));
 }
 
+/**
+ * Save taxonomy term translations
+ * 
+ * @param $terms
+ *   Array of terms indexed by language
+ * @param $trid
+ *   Optional translation set id
+ */
+function translation_taxonomy_save($terms, $trid = 0) {
+  // Delete old translations for this trid
+  if ($trid){
+    db_query("UPDATE {term_data} SET trid = 0 WHERE trid= %d", $trid);
+  }
+  // Now pick up all the tids in an array
+  $translations = array();
+  foreach (i18n_supported_languages() as $lang => $name) {
+    if (isset($terms[$lang]) && ($term = (array)$terms[$lang]) && $tid = $term['tid']) {
+      $translations[$lang] = $tid;
+    }
+  }
+  // Now set a translation set with all these terms.
+  if (count($translations)) {
+    $trid = (is_numeric($trid) && $trid) ? $trid : db_next_id('{term_data}_trid');
+    db_query('UPDATE {term_data} SET trid = %d WHERE tid IN(%s)', $trid, implode(',',$translations));
+  }  
+}
 /**
  * Converts a list of arrays to an array of the form keyfield => namefield
  */
