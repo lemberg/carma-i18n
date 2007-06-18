@@ -2,4 +2,3 @@ name = Internationalization
 description = Enables multilingual content.
 dependencies = locale
 package = Multilanguage - i18n
-version = "$Name$"
