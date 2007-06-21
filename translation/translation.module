@@ -1080,9 +1080,9 @@ function translation_url($url, $lang) {
   // If url has lang_prefix, remove it
   i18n_get_lang_prefix($url, true);
   // are we looking at a node?
-  if (preg_match("/^(node\/)([0-9]*)$/",$url,$matches)) {
+  if (preg_match("/^(node\/)([0-9]*)(.*)$/",$url,$matches)) {
     if ($nid = translation_node_nid($matches[2], $lang)) {
-      $url = "node/$nid";
+      $url = "node/$nid".$matches[3];
     }
   }
   // or a taxonomy term
