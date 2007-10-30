@@ -100,8 +100,8 @@ function translation_menu($may_cache) {
     }
     // Special redirections and rewrite conditions
     if( arg(0) == 'node' && arg(1) == 'add' && isset($_GET['translation']) && ($source_nid = $_GET['translation'])  && isset($_GET['language']) && ($lang = $_GET['language']) && array_key_exists($lang, i18n_supported_languages()) ) {
-      // Special redirection for product types
-      if (arg(2) == 'product' && !arg(3) && is_numeric($source_nid) && $ptype = db_result(db_query("SELECT ptype FROM {ec_product} WHERE nid = %d", $source_nid))) {
+      // Special redirection for product types. Check for product module because there may be 'product' node types created by cck
+      if (arg(2) == 'product' && module_exists('product') && !arg(3) && is_numeric($source_nid) && $ptype = db_result(db_query("SELECT ptype FROM {ec_product} WHERE nid = %d", $source_nid))) {
         drupal_goto(url("node/add/product/$ptype", "translation=$source_nid&language=$lang", NULL, TRUE));
       }
       // Change rewrite conditions when translating node
@@ -262,7 +262,7 @@ function translation_nodeapi(&$node, $op, $arg = 0) {
   if (variable_get("i18n_node_$node->type", 0)) {
     switch ($op) {
       case 'load':
-        $node->translation = translation_node_get_translations(array('nid' =>$node->nid), FALSE);
+        return array('translation' => translation_node_get_translations(array('nid' =>$node->nid), FALSE));
         break;
       case 'insert':
         if($node->translation_nid) {

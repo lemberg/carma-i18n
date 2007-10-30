@@ -145,7 +145,7 @@ function ttext_widget_settings($op, $widget) {
  */
 function ttext_widget($op, &$node, $field, &$items) {
   drupal_set_message("ttext_widget: op=$op");
-  return text_widget($op, &$node, $field, &$items);
+  return text_widget($op, $node, $field, $items);
 }
 
 /**
