@@ -70,6 +70,11 @@ function i18n_block($op = 'list', $delta = 0) {
  */
 function i18n_init(){
   global $i18n_langpath;
+  // If not in bootstrap, variable init. This may go before the rest of the code because some variables may need to be loaded
+  if(!_i18n_is_bootstrap()){
+    //include drupal_get_path('module', 'i18n').'/i18n.inc';
+    i18n_variable_init();    
+  } 
   $lang = i18n_get_lang();
   $path = _i18n_get_original_path();
   // Init selection mode
@@ -94,11 +99,7 @@ function i18n_init(){
     //search alias with and without lang and remove lang.
     $_GET['q'] = i18n_get_normal_path($path);
   }
-  // If not in bootstrap, variable init
-  if(!_i18n_is_bootstrap()){
-    //include drupal_get_path('module', 'i18n').'/i18n.inc';
-    i18n_variable_init();    
-  }  
+ 
 }
 
 /**
@@ -117,7 +118,7 @@ function i18n_help($section = 'admin/help#i18n' ) {
       $output .= '<li>'.t('Support for long locale names').'</li>';
       $output .= '<li>'.t('Multilingual menu items').'</li>';      
       $output .= '</ul>';
-      $output .= '<p>'. t('For more information please read the <a href="@i18n">on-line help pages</a>.', array('@i18n' =>'http://drupal.org/node/31631')) .'</p>';
+      $output .= '<p>'. t('For more information please read the <a href="@i18n">on-line help pages</a>.', array('@i18n' =>'http://drupal.org/node/133977')) .'</p>';
       return $output;
     case 'admin/settings/i18n':
       $output .= '<p>'.t('To enable multilingual support for specific content types go to !configure_content_types.', array('!configure_content_types' => l(t('configure content types'), 'admin/content/types'), )).'</p>';

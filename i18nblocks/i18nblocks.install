@@ -37,6 +37,8 @@ function i18nblocks_install() {
  module varchar(64) NOT NULL DEFAULT '',
  delta varchar(32) NOT NULL DEFAULT '0',
  PRIMARY KEY (bid,language))");
+       // Sequences
+      db_query("CREATE SEQUENCE {i18n_blocks}_delta_seq INCREMENT 1 START 1");
       break;
   }
   db_query("UPDATE {system} SET weight = 20 WHERE name = 'i18nblocks' AND type = 'module'");
