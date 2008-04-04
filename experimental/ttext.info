@@ -1,7 +1,7 @@
 ; $Id$
 name = Translatable Text
 description = CCK translatable text field
-dependencies = i18n i18nstrings
+dependencies = i18n i18nstrings text
 package = Multilanguage - i18n - experimental
 
 

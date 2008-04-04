@@ -1,3 +1,7 @@
+5-x-2-2 to
+------------------------------------
+Fixed missing dependency on ttext module, http://drupal.org/node/217760
+
 4-7-4 to 5-0
 --------------
 - Added terms with no language for translations

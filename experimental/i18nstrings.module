@@ -13,19 +13,14 @@
  * Implementation of hook_menu().
  */
 function i18nstrings_menu($may_cache) {
-  $items = array();
-  if ($may_cache) {
-    $items[] = array(
+  $items[] = array(
       'path' => 'admin/settings/i18n/strings',
       'type' => MENU_LOCAL_TASK,
       'title' => t('Strings'),
       'description' => t('Translatable strings.'),
       'callback' => 'i18nstrings_admin',
        'access' => user_access('administer site configuration'),
-      );
-  } else {   
-
-  }
+  );
 
   return $items;
 }
