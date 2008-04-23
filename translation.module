@@ -300,7 +300,7 @@ function translation_node_page() {
   	form_set_error('language', t("You need to set a language before creating a translation."));
     drupal_goto("node/$nid/edit");
   }
-  drupal_set_title($node->title);
+  drupal_set_title(check_plain($node->title));
   $output = '';
   switch($op){
     case 'select':
@@ -310,11 +310,6 @@ function translation_node_page() {
     case t('Save'):
       $output .= translation_node_form($node, $args[1]);
       break;
-    case 'remove':
-    case t('Remove'):
-      db_query("UPDATE {i18n_node} SET trid = 0 WHERE nid=%d", $node->nid);
-      drupal_set_message("The node has been removed from the translation set");
-      drupal_goto("node/$node->nid/translation");
     default:
       $output .= translation_node_overview($node);
   }
@@ -557,18 +552,29 @@ function translation_node_overview($node) {
 	    $rows[] = array($langname, $title, $status, implode(" | ", $options));
 	  }
 	  $output .= theme('table', $header, $rows);
-    if($node->trid){
+    if ($node->trid){
+      $form['node'] = array('#type' => 'value', '#value' => $node);
       $form['submit'] = array('#type' => 'submit', '#value' => t('Remove'), '#suffix' => t('Remove node from this translation set'));
-      $output .= drupal_get_form(NULL, $form);
+      $output .= drupal_get_form('translation_node_remove', $form);
     }
   return $output;
+}
+
+/**
+ * Form submit. Remove node from translation
+ */
+function translation_node_remove_submit($form_id, $form_values) {
+  $node = $form_values['node'];
+  db_query("UPDATE {i18n_node} SET trid = 0 WHERE nid=%d", $node->nid);
+  drupal_set_message(t("The node has been removed from the translation set"));
+  drupal_goto("node/$node->nid/translation");  
 }
 
 /**
  * Form to select a translation from existing nodes
  */
 function translation_node_form($node, $lang){
-	$form['node'] = array('#type' => 'value', '#value' =>$node);
+  $form['node'] = array('#type' => 'value', '#value' =>$node);
   $form['language'] = array('#type' => 'hidden', '#value' => $lang);
   $form['source_nid'] = array('#type' => 'hidden', '#value' => $node->nid);
   $form['trid'] = array('#type' => 'hidden', '#value' => $node->trid);
@@ -773,7 +779,7 @@ function translation_taxonomy_overview($vid) {
     $thisrow = array();
     foreach ($languages as $lang => $name) {
       if (array_key_exists($lang, $terms)) {
-        $thisrow[] = $terms[$lang]->name;
+        $thisrow[] = l($terms[$lang]->name, 'taxonomy/term/'.$terms[$lang]->tid);
        }
        else {
         $thisrow[] = '--';
@@ -829,7 +835,7 @@ function translation_taxonomy_submit($form_id, $form_values) {
   $translations = array();
   // Delete old translations
   if($trid){
-    db_query("UPDATE {term_data} SET trid = 0 WHERE trid=%d", $trid);
+    db_query("UPDATE {term_data} SET trid = 0 WHERE trid = %d", $trid);
   }
   foreach ($languages as $lang => $name) {
     if (is_numeric($form_values[$lang]['tid'])) {
@@ -838,7 +844,7 @@ function translation_taxonomy_submit($form_id, $form_values) {
   }
   if(count($translations)) {
     $trid = is_numeric($trid) ? $trid : db_next_id('{term_data}_trid');
-    db_query('UPDATE {term_data} SET trid=%d WHERE tid IN(%s)', $trid, implode(',',$translations));
+    db_query('UPDATE {term_data} SET trid=%d WHERE tid IN (%s)', $trid, implode(',',$translations));
   }
   drupal_set_message(t('Term translations have been updated'));
 }
