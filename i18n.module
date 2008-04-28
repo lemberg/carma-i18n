@@ -52,7 +52,7 @@ function _i18n_init(){
  */
 function i18n_block($op = 'list', $delta = 0) {
   if ($op == 'list') {
-    $blocks[0]['info'] = t('Language switcher');
+    $blocks[0]['info'] = t('Language switcher (Interface only)');
   }
   elseif($op == 'view') {
     $blocks['subject'] = t('Languages');
@@ -706,7 +706,7 @@ if(!function_exists('custom_url_rewrite')) {
  * Rewrites path with current language and removes prefix if searching for source path
  */
 function i18n_url_rewrite($type, $path, $original){
-  if ($type == 'alias' && !i18n_get_lang_prefix($path) ){
+  if ($type == 'alias' && !strpos($path, '://') && !i18n_get_lang_prefix($path)){
     return $path ? i18n_get_lang() . '/'. $path : i18n_get_lang();
   } elseif ($type == 'source') {
     if ($path == $original) {

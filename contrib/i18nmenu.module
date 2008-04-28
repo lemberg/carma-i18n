@@ -31,6 +31,7 @@ function i18nmenu_translate_all(){
   foreach($_menu['items'] as $mid => $item) {
     if($item['type'] & MENU_CREATED_BY_ADMIN) {
       $_menu['items'][$mid]['title'] = t($_menu['items'][$mid]['title']);
+      $_menu['items'][$mid]['description'] = t($_menu['items'][$mid]['description']);
     }
   }
   // Update cache

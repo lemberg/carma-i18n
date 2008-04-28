@@ -79,7 +79,7 @@ function translation_menu($may_cache) {
   }
   else {
     if (arg(0) == 'node' && is_numeric(arg(1)) && variable_get('i18n_node_'.translation_get_node_type(arg(1)), 0)) {
-      $access = user_access('translate nodes');
+      $access = translation_access(node_load(arg(1)));
       $type = MENU_LOCAL_TASK;      
       $items[] = array(
         'path' => 'node/'. arg(1) .'/translation', 
@@ -113,11 +113,20 @@ function translation_menu($may_cache) {
 }
 
 /**
- * Implementation of hook_perm
+ * Implementation of hook_perm().
  */
 function translation_perm(){
-  return array('translate nodes');
+  return array('translate nodes', 'translate own nodes');
 }
+
+/**
+ * Implementation of hook_access().
+ */
+function translation_access($node) {
+        global $user;
+        return user_access('translate nodes') || $node->uid == $user->uid && user_access('translate own nodes');
+}
+
 
 /**
  * Form builder function: settings form
@@ -154,7 +163,7 @@ function translation_admin_settings(){
  */
 function translation_block($op = 'list', $delta = 0) {
   if ($op == 'list') {
-    $blocks[0]['info'] = t('Translations');
+    $blocks[0]['info'] = t('Translations for Content');
   }
   elseif($op == 'view') {
     $blocks['subject'] = t('Languages');
@@ -180,7 +189,7 @@ function translation_form_alter($form_id, &$form) {
     if ($node->nid && $node->translation) {
       $translations = $node->translation;
     }
-    elseif (isset($_GET['translation']) && user_access('translate nodes')) {
+    elseif (isset($_GET['translation']) && translation_access(node_load($_GET['translation']))) {
       // We are translating a node: node/add/type/translation/nid/lang
       $translation_nid = $_GET['translation'];
       $language = $_GET['language'];
@@ -549,7 +558,8 @@ function translation_admin_nodes() {
       if($language == $node->language) {
       	$form['operations'][$node->nid] = array('#value' => '--');
       } else {
-        $form['operations'][$node->nid] = array('#value' => l(t('create translation'), 'node/add/'.$node->type, array(), "translation=$node->nid&language=$language").
+        $prefix = variable_get('i18n_translation_links', 0) ? i18n_get_lang() : $language;
+        $form['operations'][$node->nid] = array('#value' => l(t('create translation'), $prefix.'/node/add/'.$node->type, array(), "translation=$node->nid&language=$language").
         ' | '.l(t('select node'), "node/$node->nid/translation/select/$language", array(), $destination));   
       }
     }
@@ -712,7 +722,8 @@ function translation_node_overview($node) {
       $status = $trnode->status ? t('Published') : t('Not published');
 	} else {
 	  $title = t('Not translated');
-	  $options[] = l(t('create translation'), $createlink, array(), "translation=$node->nid&language=$lang");
+	  $prefix = variable_get('i18n_translation_links', 0) ? i18n_get_lang() : $lang;
+      $options[] = l(t('create translation'), $prefix . '/' . $createlink , array(), "translation=$node->nid&language=$lang");
 	  $status = '--';
     }
 	$options[] = l(t('select node'), "node/$node->nid/translation/select/$lang");
