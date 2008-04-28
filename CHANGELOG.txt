@@ -1,6 +1,15 @@
-5-x-2-2 to
+// $Id$
+
+5-x-2-3 to ........
+---------------------
+- Fixed synchronization warning on content type by yettyn, #166101
+- Applied postgres compatibility patch by ivanSB, #183593
+- Added token support for language code by knseibert, #176449
+
+5-x-2-2 to 5-x-2-3
 ------------------------------------
-Fixed missing dependency on ttext module, http://drupal.org/node/217760
+- Multiple bug fixes and security update, http://drupal.org/node/250344
+- Fixed missing dependency on ttext module, http://drupal.org/node/217760
 
 4-7-4 to 5-0
 --------------

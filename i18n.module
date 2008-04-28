@@ -912,6 +912,35 @@ function i18n_form_alter($form_id, &$form) {
 function i18n_perm() {
   return array('administer all languages');
 }
+
+/**
+ * Implementation of hook_token_values().
+ */
+function i18n_token_values($type, $object = NULL) {
+  $values = array();
+  switch ($type) {
+    case 'node':
+    case 'taxonomy':
+      $values['lang'] = i18n_node_get_lang($object->nid, '');
+      break;
+  }
+  return $values;
+}
+
+/**
+ * Implementation of hook_token_list().
+ */
+function i18n_token_list($type = 'all') {
+  $tokens = array();
+  if ($type == 'node' || $type == 'all') {
+    $tokens['node']['lang'] = t("Language code of the document.");
+  }
+  if ($type == 'taxonomy' || $type == 'all') {
+    $tokens['taxonomy']['lang'] = t("Language code of the document.");
+  }
+  return $tokens;
+}
+
 /**
  * Process menu and menu item add/edit form submissions.
  */
