@@ -696,7 +696,7 @@ function theme_i18n_language_icon($lang){
  * If so, path rewriting won't work properly but at least it won't break Drupal
  */
 
-if(!function_exists('custom_url_rewrite')) {
+if (!function_exists('custom_url_rewrite')) {
   function custom_url_rewrite($type, $path, $original) {
     return i18n_url_rewrite($type, $path, $original);
   }
