@@ -91,7 +91,7 @@ function i18ntaxonomy_form_alter($form_id, &$form) {
                 // This may be an object with an option property being an array (tid => name)
                 if (is_object($option) && is_array($option->option)) {
                   foreach (array_keys($option->option) as $tid) {
-                    $option->option[$tid] = t($option->option[$tid]);
+                    $option->option[$tid] = tt("taxonomy:term:$tid:name", $option->option[$tid]);
                   }
                   $form["filter$index"]['#options'][$value] = $option;
                 // But it used to be a plain string, so let's keep this just in case...
@@ -229,7 +229,7 @@ function _i18ntaxonomy_translate_terms(&$terms) {
   if ($translate = variable_get('i18ntaxonomy_vocabularies', array())) {
     foreach(array_keys($terms) as $tid) {
       if($translate[$terms[$tid]->vid]) {
-        $terms[$tid]->name = t($terms[$tid]->name);
+        $terms[$tid]->name = tt("taxonomy:term:$tid:name", $terms[$tid]->name);
       }
     } 
   }
@@ -245,7 +245,7 @@ function _i18ntaxonomy_vocabulary_terms($vid = NULL, $fullname = TRUE) {
   }  
   $result = db_query("SELECT DISTINCT(td.tid), td.name, td.weight, v.name as vocabname, v.weight FROM {term_data} td LEFT JOIN {vocabulary} v ON v.vid = td.vid $where ORDER BY v.weight, v.name, td.weight, td.name");
   while ($obj = db_fetch_object($result)) {
-    $tids[$obj->tid] = $fullname ? t($obj->vocabname).': '.t($obj->name) : t($obj->name);
+    $tids[$obj->tid] = $fullname ? tt("taxonomy:vocabulary:$obj->vid:name", $obj->vocabname).': '.tt("taxonomy:term:$obj->tid:name", $obj->name) : tt("taxonomy:term:$obj->tid:name", $obj->name);
   }
 
   return $tids;

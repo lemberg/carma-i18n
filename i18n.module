@@ -1220,29 +1220,35 @@ function _i18n_get_original_path() {
  */ 
 
 /**
- * Translate configurable string, and store for l10n client
+ * Translate configurable string, and store for l10n client. 
  * 
- * @param $name
+ * This is just a wrapper for backwards compatibility. For this function to do something useful
+ * you need to enable i18nstrings module, otherwise it's just a slightly improved t() for i18n. It works
+ * the same but forgets about English and translates when language != default and language == locale 
+ * 
+ * @param $strid
  *   Textgroup and location glued with ':'
- * @param $string
+ *   I.e. profile:
+ * @param $default
  *   String in default language. Default language may or may not be English
  * @param $langcode
  *   Optional language code if different from current request language
  * @param $update
  *   Whether to update/create the string
  */
-function i18n_t($name, $string, $langcode = NULL, $update = FALSE) {
+function tt($strid, $default, $language = NULL, $update = FALSE) {
   global $locale;
   
-  $langcode = $langcode ? $langcode : $locale;
+  $language = $language ? $language : $locale;
   
-  if (function_exists('tt')) {
-    return tt($name, $string, $langcode, $update);
-  } elseif ($langcode == $locale && $langcode != i18n_default_language()) {
-    // Use locale module but only if the language is not the default one
-    // And the language to translate to is the page language
-    $translation = locale($string);
+  if (function_exists('i18nstrings_tt')) {
+    return i18nstrings_tt($strid, $default, $language, $update);
+  }
+  elseif ($language == i18n_default_language() || $language != $locale) {
+    // We just translate from default language, not to default language
+    return $default;
   } else {
-    return $string;
+    // We cannot call t() here because it won't work for English when not default language
+    return locale($default);
   }
 }

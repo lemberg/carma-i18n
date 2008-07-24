@@ -30,8 +30,8 @@ function i18nmenu_translate_all(){
   // Translate all user defined meny items
   foreach($_menu['items'] as $mid => $item) {
     if($item['type'] & MENU_CREATED_BY_ADMIN) {
-      $_menu['items'][$mid]['title'] = t($_menu['items'][$mid]['title']);
-      $_menu['items'][$mid]['description'] = t($_menu['items'][$mid]['description']);
+      $_menu['items'][$mid]['title'] = tt("menu:item:$mid:title", $_menu['items'][$mid]['title']);
+      $_menu['items'][$mid]['description'] = tt("menu:item:$mid:description",$_menu['items'][$mid]['description']);
     }
   }
   // Update cache

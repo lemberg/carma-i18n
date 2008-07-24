@@ -13,10 +13,17 @@
  * - object type, like 'field', 'type''
  * - object id
  * - property
- *   
+ * 
+ * About the storage, as Drupal 5 doesn't have textgroups, it will use an aditional table (i18n_locale)
+ * that links together 'strid' and 'lid'. While there may be multiple objects using the same default
+ * string, locale tables will only have one instance.
+ * 
  * @author Jose A. Reyero, 2007
  *
  */
+
+// This is a special char that shouldn't appear in paths and will help us store two strids on the same location
+define('I18NSTRINGS_SPLIT', "\n");
 
 /**
  * Implementation of hook_menu().
@@ -115,15 +122,22 @@ function i18nstrings_load($strid) {
 /**
  * Get string for a language
  */
-function i18nstrings_get_string($strid, $language = FALSE, $refresh = FALSE) {
+function i18nstrings_get_string($strid, $language = FALSE, $default = NULL, $refresh = FALSE) {
   static $strings = array();
   
   if ($refresh) {
     $language ? $strings[$language] = array() : $strings = array(); 
   }
   if (!isset($strings[$language][$strid])) {
-    $translation = db_fetch_object(db_query("SELECT t.* FROM {locales_target} t INNER JOIN {locales_source} s ON t.lid = s.lid WHERE s.location = '%s' AND t.locale = '%s'", $strid, $language));
-    $strings[$language][$strid] = $translation ? $translation->translation : FALSE;
+    $translation = db_fetch_object(db_query("SELECT s.lid, t.translation FROM {i18n_locale} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.locale = '%s' WHERE s.strid = '%s'", $language, $strid));
+    
+    if ($translation) {
+      $strings[$language][$strid] = $translation->translation ? $translation->translation : FALSE;
+    } else {
+      // Looks like this string is not in the collection, add it
+      i18nstrings_save_string($strid, $default);
+      $strings[$language][$strid] = FALSE;
+    } 
   }
 
   return $strings[$language][$strid];
@@ -136,51 +150,108 @@ function i18nstrings_get_string($strid, $language = FALSE, $refresh = FALSE) {
  * locale_refresh_cache() is a quite expensive operation.
  */
 function i18nstrings_save_string($strid, $string) {
-  drupal_set_message("DEBUG: i18n_strings_save: $strid($language)= $value");
-  if ($source = i18nstrings_get_source($strid, $string)) {
-    if ($source->location == $strid && $source->source == $string) {
-      $source->clean = TRUE;
+  // drupal_set_message("DEBUG: i18n_strings_save: $strid = $string");
+  
+  // This will store the string sources to update or create at the end
+  if ($source = _i18nstrings_get_source($string, $strid)) {
+    if (!$source->strid) {
+      // We have the string, just need to create i18n row
+      $source->strid = $strid;
+      $source->paths[] = $strid;
+      _i18nstrings_save_source($source);      
+    } elseif ($source->source != $string) {
+      if (count($source->paths) == 1) {
+        // This is a unique i18n row, just update locale source
+        unset($source->strid); // So i18n row is not updated we add it back 2 lines below
+        $source->source = $string;
+        _i18nstrings_save_source($source); 
+        $source->strid = $strid;
+      } else {
+        // Fuck, there are more i18n rows, we need to update this one and create a new one
+        $update = $source;
+        $update->paths = array_diff($source->paths, array($strid));
+        unset($source->strid);
+        _i18nstrings_save_source($update);
+        // Now we save the new one but search before for this other string
+        if ($search = _i18nstrings_get_source($string)) {
+          $source = $search;
+          $source->paths[] = $strid;
+        } else {
+          // String not found so we create a full new one at the end
+          unset($source->lid);
+          $source->paths = array($strid);
+        }
+        $source->strid = $strid;
+        _i18nstrings_save_source($source);
+      }
     } else {
-      $source->clean = FALSE;
-      $source->source = $string;
-      $source->location = $strid;
+      // Just check in case the strid is not in locale table, this shouldn't happen thoug
+      if (!in_array($strid, $source->paths)) {
+        $source->paths[] = $strid;
+        _i18nstrings_save_source($source);
+      }
     }
   } else {
-    // String not stored, create a new one
+    // Full create
     $source = new Stdclass();
-    $sorce->source = $string;
-    $source->location = $strid;
-  }
-  // Now save or update, depending on what we've found
-  if (!$source->lid) {
-    //dsm("Creating source string: $strid $string");
-    db_query("INSERT INTO {locales_source} (location, source) VALUES ('%s', '%s')", $source->location, $source->source);
-    $source->lid = db_result(db_query("SELECT lid FROM {locales_source} WHERE location = '%s' AND source = '%s'", $source->location, $source->source));
-  } elseif (!$source->clean) {
-    //dsm("Updating source string: $strid $string");
-    db_query("UPDATE {locales_source} SET location = '%s', source = '%s' WHERE lid = %d", $source->location, $source->source, $source->lid);
-  }
+    $source->strid = $strid;
+    $source->source = $string;
+    $source->paths[] = $strid;
+    _i18nstrings_save_source($source);
+  }  
+
   return $source;
 }
 
 /**
  * Get source string from locale system
  * 
- * @param $strid
- *   String id
  * @param $string
  *   String in the default language
+ * @param $strid
+ *   String id
  */
-function i18nstrings_get_source($strid, $string) {
-  // First try with string id
-  if ($source = db_fetch_object(db_query("SELECT * FROM {locales_source} WHERE location = '%s'", $strid))) {
-    return $source;
+function _i18nstrings_get_source($string, $strid = NULL) {
+  $source = NULL;
+  // First try with string id using i18n_locale
+  if ($strid) {
+    $source = db_fetch_object(db_query("SELECT i.*, s.source, s.location FROM {i18n_locale} i LEFT JOIN {locales_source} s ON i.lid = s.lid WHERE strid = '%s'", $strid));
+  }
+  if (!$source && $string) {
+    // Retry with the string itself using the locales_source table
+    $source = db_fetch_object(db_query("SELECT s.* FROM {locales_source} s WHERE s.source = '%s'", $string));
+  }
+  if ($source) {
+    // This will let us know how many object elements use this source string
+    // If location is empty (may happen when imported strings, the array should countain one empty string)
+    $source->paths = explode(I18NSTRINGS_SPLIT, $source->location);
+
+  }
+  return $source;
+}
+
+/**
+ * Update locale source and i18n table
+ */
+function _i18nstrings_save_source(&$source, $update = TRUE) {
+  // Build location with all the paths this string belongs to
+  $source->paths = array_unique($source->paths);
+  $source->location = implode(I18NSTRINGS_SPLIT, $source->paths);
+  if (!$source->lid) {
+    // Create locales_source and get new lid
+    db_query("INSERT INTO {locales_source} (location, source) VALUES ('%s', '%s')", $source->location, $source->source);
+    $source->lid = db_result(db_query("SELECT lid FROM {locales_source} WHERE location = '%s' AND source = '%s'", $source->location, $source->source));
+  } elseif ($update) {    
+    // Update locales source
+    db_query("UPDATE {locales_source} SET location = '%s', source = '%s' WHERE lid = %d", $source->location, $source->source, $source->lid);
   } 
-  // Retry with the string itself
-  elseif ($source = db_fetch_object(db_query("SELECT * FROM {locales_source} WHERE source = '%s'", $string))) {
-    return $source;
+  // Now update/insert into i18n table
+  if ($source->strid) {
+    db_query("DELETE FROM {i18n_locale} WHERE strid = '%s'", $source->strid);
+    db_query("INSERT INTO {i18n_locale}(strid, lid) VALUES('%s', %d)", $source->strid, $source->lid);    
   }
 }
+
 
 /**
  * Translate configurable string, and store for l10n client
@@ -195,9 +266,9 @@ function i18nstrings_get_source($strid, $string) {
  * @param $update
  *   Whether to update/create the string
  */
-function tt($strid, $default, $language = NULL, $update = FALSE) {
+function i18nstrings_tt($strid, $default, $language = NULL, $update = FALSE) {
   global $locale, $l10n_client_strings;
-  
+  //dsm("i18nstrings translating $strid $default");
   $language = $language ? $language : $locale;
   $string = NULL;
   
@@ -207,7 +278,7 @@ function tt($strid, $default, $language = NULL, $update = FALSE) {
   if ($language == i18n_default_language()) {
     // We just translate from default language, not to default language
     return $default;
-  } elseif ($translation = i18nstrings_get_string($strid, $language)) {
+  } elseif ($translation = i18nstrings_get_string($strid, $language, $default)) {
     $l10n_client_strings[$default] = $translation;
     return $translation;
   } else {

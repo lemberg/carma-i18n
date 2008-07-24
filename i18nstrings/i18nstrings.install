@@ -20,6 +20,17 @@ CREATE TABLE  {i18n_locale} (
   }
 }
 
+function i18nstrings_update_1() {
+  $ret = array();
+  $ret[] = update_sql("CREATE TABLE  {i18n_locale} (
+  `strid` varchar(255) NOT NULL,
+  `lid` int(10) NOT NULL,
+  `text` text NOT NULL,
+  PRIMARY KEY  (`strid`)
+)  /*!40100 DEFAULT CHARACTER SET UTF8 */");
+  return $ret;
+}
+
 /**
  * Old table
  *
