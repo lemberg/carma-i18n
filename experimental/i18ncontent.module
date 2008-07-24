@@ -10,18 +10,34 @@
  */
 
 /**
+ * Implementation of hook_node_info()
+ * 
  * Returns node types with translated info
  */
 function i18ncontent_node_info() {
   // No db rewrite sql here, so we don't need to worry about our own rewriting
   $type_result = db_query('SELECT nt.type, nt.* FROM {node_type} nt ORDER BY nt.type ASC', 'nt', 'type');
   while ($type = db_fetch_object($type_result)) {
-    $type->name = tt('content_type_name:'.$type->type, $type->name);
-    $type->description = tt('content_type_description:'.$type->type, $type->description);
+    $type->name = tt("nodetype:$type->type:name", $type->name);
+    $type->description = tt("nodetype:$type->type:description", $type->description);
     $info[$type->type] = (array)$type;
   }
 
   return $info;  
+}
+
+/**
+ * Implementation of hook_content_type()
+ * 
+ * @todo More fine grained, just update the given node type (not possible when changing type name)
+ */
+function i18ncontent_node_type($op, $info) {
+  switch ($op) {
+    case 'update':
+    case 'insert':
+    case 'delete':
+      i18ncontent_locale_refresh();
+  }
 }
 
 /**
@@ -31,5 +47,39 @@ function i18ncontent_db_rewrite_sql($query, $primary_table, $primary_key) {
   if (preg_match("/SELECT nt\.type, nt\.\* FROM {node_type} nt/", $query)) {
     // Using FALSE here doesn't work with older mysql versions
     return array('where' => '0 = 1');
+  }
+}
+
+/**
+ * Implementation of hook_locale().
+ */
+function i18ncontent_locale($op = 'groups', $group = NULL) {
+  switch ($op) {
+    case 'groups':
+      return array('nodetype' => t('Content type'));
+    case 'refresh':
+      if ($group == 'nodetype') {
+        return i18ncontent_locale_refresh();
+      }
+  }
+}
+
+/**
+ * Refresh content type strings.
+ * 
+ * @todo Clean up leftover strings
+ */
+function i18ncontent_locale_refresh() {
+  foreach (node_get_types() as $type) {
+    tt("nodetype:$type->type:name", $type->name, NULL, TRUE);
+    tt("nodetype:$type->type:title", $type->title_label, NULL, TRUE);
+    tt("nodetype:$type->type:body", $type->body_label, NULL, TRUE);
+    /*
+    if ($type->help) {
+      ts("nodetype:$type->type:help", $type->help, NULL, TRUE);
+      $type->help = '';
+      node_type_save($type);
+    }
+    */
   }
 }

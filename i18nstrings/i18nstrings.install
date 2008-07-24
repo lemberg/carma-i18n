@@ -6,11 +6,11 @@ function i18nstrings_install() {
     case 'mysql':
     case 'mysqli':
       db_query("
-CREATE TABLE  {i18n_strings} (
-  `strid` varchar(100) NOT NULL,
-  `locale` varchar(12) NOT NULL,
+CREATE TABLE  {i18n_locale} (
+  `strid` varchar(255) NOT NULL,
+  `lid` int(10) NOT NULL,
   `text` text NOT NULL,
-  PRIMARY KEY  (`strid`,`locale`)
+  PRIMARY KEY  (`strid`)
 )  /*!40100 DEFAULT CHARACTER SET UTF8 */ 
 ");
 
@@ -19,3 +19,13 @@ CREATE TABLE  {i18n_strings} (
       drupal_set_message(t('Database type not supported. This module, i18nstrings, needs manual installation.'));
   }
 }
+
+/**
+ * Old table
+ *
+CREATE TABLE  {i18n_strings} (
+  `strid` varchar(100) NOT NULL,
+  `locale` varchar(12) NOT NULL,
+  `text` text NOT NULL,
+  PRIMARY KEY  (`strid`,`locale`)
+)  */
