@@ -1,5 +1,9 @@
 // $Id$
 
+5-x-3-x-dev to .........
+---------------------
+- Wrapped functions with conditional function_exists so they can be overridden
+
 5-x-2-3 to 5-x-2-4
 ---------------------
 - Fixed database compatibility issue with i18ncontent query by omo, #135387

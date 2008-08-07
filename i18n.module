@@ -18,32 +18,84 @@ define('LANGUAGE_SUPPORT_EXTENDED', 2);
  * Module initialization
  * 
  * Get language from path if exists and Initialize i18n system
+ *
+ * We allow other module to do a previous include and override all
+ * of i18n's path handling functions and hooks, that's why many of them are wrapped
+ * with conditional function_exists()
+ * 
+ * This will be used for integration with 'context' module.
  */
 
 /**
  * This one expects to be called first from common.inc
  */
-function i18n_get_lang($setlanguage = NULL) {
-  static $i18n_language;
-  //see if the language is already set.
-  if ($setlanguage) {
-    $i18n_language = $setlanguage;
-  } elseif ($i18n_language) {
-    return $i18n_language;
-  } else {
-    _i18n_init();
-    return $i18n_language = _i18n_get_lang();
+if (!function_exists('i18n_get_lang')) {
+  function i18n_get_lang($setlanguage = NULL) {
+    static $i18n_language;
+    //see if the language is already set.
+    if ($setlanguage) {
+      $i18n_language = $setlanguage;
+    } elseif ($i18n_language) {
+      return $i18n_language;
+    } else {
+      _i18n_init();
+      return $i18n_language = _i18n_get_lang();
+    }
   }
 }
 
 /**
+ *  Gets language, checking in order:
+ *
+ *  1. Path language
+ *  2. Session language
+ *  3. User language
+ *  4. Browser language
+ *  5. Default language
+ */
+if (!function_exists('_i18n_get_lang')) {
+  function _i18n_get_lang() {
+    global $user, $i18n_langpath;
+    static $i18n_lang;
+    // Check whether the language is already set.
+    if ($i18n_lang) {
+      return $i18n_lang;
+    }
+    // Language not set, find one
+    $languages = i18n_supported_languages();
+    
+    if ($i18n_langpath && array_key_exists($i18n_langpath,$languages)) {
+      // Sets session language only when language is in path, not for other cases
+      $_SESSION['language'] = $i18n_lang = $i18n_langpath;  
+    }
+    elseif (isset($_SESSION['language']) && array_key_exists($_SESSION['language'], $languages)) {
+      $i18n_lang = $_SESSION['language'];
+    }
+    elseif ($user->uid && $user->language && array_key_exists($user->language,$languages)) {
+      $i18n_lang = $user->language;
+    }
+    elseif (variable_get("i18n_browser",0) && $lang = i18n_get_browser_lang()) {
+      $i18n_lang=$lang;
+    }
+    else {
+      $i18n_lang= i18n_default_language();
+    }
+    return $i18n_lang;
+  }
+}
+
+
+
+/**
  * Minimum initialization
  */
-function _i18n_init(){
-  global $i18n_langpath;
-  $path = _i18n_get_original_path();
-  $i18n_langpath = i18n_get_lang_prefix($path);
-}  
+if (!function_exists('_i18n_init')) {
+  function _i18n_init(){
+    global $i18n_langpath;
+    $path = _i18n_get_original_path();
+    $i18n_langpath = i18n_get_lang_prefix($path);
+  }
+} 
 
 /**
  * Language block
@@ -1087,43 +1139,7 @@ function i18n_variable_del($name, $language) {
   unset($i18n_conf[$name]);
 }
 
-/**
- *  Gets language, checking in order:
- *
- *  1. Path language
- *  2. Session language
- *  3. User language
- *  4. Browser language
- *  5. Default language
- */
-function _i18n_get_lang() {
-  global $user, $i18n_langpath;
-  static $i18n_lang;
-  // Check whether the language is already set.
-  if ($i18n_lang) {
-    return $i18n_lang;
-  }
-  // Language not set, find one
-  $languages = i18n_supported_languages();
-  
-  if ($i18n_langpath && array_key_exists($i18n_langpath,$languages)) {
-    // Sets session language only when language is in path, not for other cases
-    $_SESSION['language'] = $i18n_lang = $i18n_langpath;  
-  }
-  elseif (isset($_SESSION['language']) && array_key_exists($_SESSION['language'], $languages)) {
-    $i18n_lang = $_SESSION['language'];
-  }
-  elseif ($user->uid && $user->language && array_key_exists($user->language,$languages)) {
-    $i18n_lang = $user->language;
-  }
-  elseif (variable_get("i18n_browser",0) && $lang=i18n_get_browser_lang()) {
-    $i18n_lang=$lang;
-  }
-  else {
-    $i18n_lang= i18n_default_language();
-  }
-  return $i18n_lang;
-}
+
 
 /**
  * Helper function to create language selector
