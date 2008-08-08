@@ -334,13 +334,20 @@ function i18n_admin_settings() {
     '#options' => array(t('Disabled'), t('Enabled' )),
     '#description' => t("User browser language for home page and links without language prefix."),
   );
-  
+  // Content selection mode
+  $form['i18n_selection_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('Content selection mode'),
+    '#default_value' => variable_get('i18n_selection_mode', 'simple'),
+    '#options' => _i18n_selection_mode(),
+    '#description' => t('Determines which content to show depending on the current page language and the default language of the site.'),
+  );
   // Language icons
   $form['icons'] = array(
     '#type' => 'fieldset',
     '#title' => t('Language icons settings'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   );
   $form['icons']['i18n_icon_path'] = array(
     '#type' => 'textfield',
@@ -357,23 +364,7 @@ function i18n_admin_settings() {
     '#size' => 10,
     '#maxlength' => 10,
     '#description' => t('Image size for language icons, in the form "width x height".'),
-  );
-
-  // Advanced options
-  $form['advanced'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Advanced settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $form['advanced']['i18n_selection_mode'] = array(
-    '#type' => 'radios',
-    '#title' => t('Content selection mode'),
-    '#default_value' => variable_get('i18n_selection_mode', 'simple'),
-    '#options' => _i18n_selection_mode(),
-    '#description' => t('Determines which content to show depending on language.'),
-  );
-    
+  );    
   return system_settings_form($form);
 }
 
@@ -662,6 +653,7 @@ function _i18n_goto($lang){
  * 	off = No language conditions inserted
  * 	simple = Only current language and no language
  * 	mixed = Only current and default languages
+ *      preferred = Current language or else (if available) default language, and no language
  *  strict = Only current language
  *  default = Only default language
  *  user = User defined, in the module's settings page
@@ -690,8 +682,10 @@ function i18n_selection_mode($mode= NULL, $params= NULL){
 // List of selection modes
 function _i18n_selection_mode(){
   return array(
-    'simple' => t('Only current language and no language'),
-    'mixed' => t('Only current and default languages and no language'),
+    // Emphasize the first 2 ones, will be the most preferred.
+    'simple' => '<strong>'.t('Current language and no language').'</strong>',
+    'preferred' => '<strong>'.t('Current language (if available) or default language, and no language').'</strong>',
+    'mixed' => t('Current language, default language, and no language'),
     'default' => t('Only default language and no language'),    
     'strict' => t('Only current language'),
     'off' => t('All content. No language conditions apply'),    
@@ -795,7 +789,14 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
       if (preg_match("/i18n/", $query)) return;
       
       $result['join'] = "LEFT JOIN {i18n_node} i18n ON $primary_table.nid = i18n.nid";
-      $result['where'] = i18n_db_rewrite_where('i18n', $mode);
+      
+      // For 'preferred mode' and nodes we need to join in an aditional table and apply special conditions
+      if ($mode == 'preferred') {
+        $result['join'] .= " LEFT JOIN {i18n_node} i18n2 ON i18n.trid = i18n2.trid AND i18n2.language = '".i18n_get_lang()."'";
+        $result['where'] = "i18n.nid IS NULL OR i18n.language ='".i18n_get_lang()."' OR (i18n.language ='".i18n_default_language()."' AND i18n2.nid IS NULL)" ;
+      } else {
+        $result['where'] = i18n_db_rewrite_where('i18n', $mode);
+      }
       return $result;
     case 't':
     case 'v':
@@ -823,6 +824,7 @@ function i18n_db_rewrite_where($alias, $mode){
     case 'simple':
       return "$alias.language ='".i18n_get_lang()."' OR $alias.language ='' OR $alias.language IS NULL" ;
     case 'mixed':
+    case 'preferred': // Preferred mode for objects different to nodes is like 'mixed'
       return "$alias.language ='".i18n_get_lang()."' OR $alias.language ='".i18n_default_language()."' OR $alias.language ='' OR $alias.language IS NULL" ;
     case 'strict':
       return "$alias.language ='".i18n_get_lang()."'" ;

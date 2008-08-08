@@ -3,6 +3,7 @@
 5-x-3-x-dev to .........
 ---------------------
 - Wrapped functions with conditional function_exists so they can be overridden
+- Added new 'preferred' language selection option, by ablivio, #203798
 
 5-x-2-3 to 5-x-2-4
 ---------------------
