@@ -81,7 +81,8 @@ function i18nstrings_admin_form($strid) {
   $form['languages'] = array('#type' => 'fieldset', '#tree' => TRUE, '#title' => t('Translations'));
 
   // Approximate the number of rows in a textfield with a maximum of 10.
-  $default = i18nstrings_get_string($strid, i18n_default_language());
+  $trans = i18nstrings_get_string($strid, i18n_default_language());
+  $default = !empty($trans->translation) ? $trans->translation : '';
   $rows = min(ceil(str_word_count($default) / 12), 10);
   
   foreach (i18n_supported_languages() as $language => $name) {
@@ -120,7 +121,9 @@ function i18nstrings_load($strid) {
 }
 
 /**
- * Get string for a language
+ * Get string for a language.
+ * 
+ * @return object The translation object if found with lid and translation properties
  */
 function i18nstrings_get_string($strid, $language = FALSE, $default = NULL, $refresh = FALSE) {
   static $strings = array();
@@ -132,11 +135,11 @@ function i18nstrings_get_string($strid, $language = FALSE, $default = NULL, $ref
     $translation = db_fetch_object(db_query("SELECT s.lid, t.translation FROM {i18n_locale} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.locale = '%s' WHERE s.strid = '%s'", $language, $strid));
     
     if ($translation) {
-      $strings[$language][$strid] = $translation->translation ? $translation->translation : FALSE;
+      $strings[$language][$strid] = $translation->translation ? $translation : FALSE;
     } else {
       // Looks like this string is not in the collection, add it
-      i18nstrings_save_string($strid, $default);
-      $strings[$language][$strid] = FALSE;
+      $source = i18nstrings_save_string($strid, $default);
+      $strings[$language][$strid] = $source;
     } 
   }
 
@@ -278,11 +281,15 @@ function i18nstrings_tt($strid, $default, $language = NULL, $update = FALSE) {
   if ($language == i18n_default_language()) {
     // We just translate from default language, not to default language
     return $default;
-  } elseif ($translation = i18nstrings_get_string($strid, $language, $default)) {
-    $l10n_client_strings[$default] = $translation;
-    return $translation;
   } else {
-    $l10n_client_strings[$default] = TRUE;
-    return $default;
-  } 
+    // We get the full source object to add it to l10n list, if not existing it will be created, so we get an lid
+    $source = i18nstrings_get_string($strid, $language, $default);
+    if (!empty($source->translation)) {
+      $l10n_client_strings[$default] = $source;
+      return $source->translation;
+    } else {
+      $l10n_client_strings[$default] = $source;
+      return $default;
+    }
+  }
 }
