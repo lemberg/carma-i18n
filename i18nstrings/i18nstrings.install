@@ -20,6 +20,13 @@ CREATE TABLE  {i18n_locale} (
   }
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
+function i18nstrings_uninstall() {
+  db_query('DROP TABLE {i18n_locale}');  
+}
+
 function i18nstrings_update_1() {
   $ret = array();
   $ret[] = update_sql("CREATE TABLE  {i18n_locale} (
