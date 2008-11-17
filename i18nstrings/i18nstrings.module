@@ -59,7 +59,7 @@ function i18nstrings_admin($op = NULL, $strid = NULL) {
 function i18nstrings_admin_overview() {
   $output = '';
   $header = array(t('String Id'), t('Default'), '');
-  $result = db_query("SELECT DISTINCT(strid) FROM {i18n_strings} ORDER BY strid", i18n_default_language());
+  $result = db_query("SELECT DISTINCT(strid) FROM {i18n_locale} ORDER BY strid", i18n_default_language());
   $rows = array();
   while($str = db_fetch_object($result)) {
     $rows[] = array(
@@ -114,7 +114,7 @@ function i18nstrings_admin_form_submit($form_id, $form_values) {
  */
 function i18nstrings_load($strid) {
   $strings = array();
-  $result = db_query("SELECT * FROM {i18n_strings} WHERE strid = '%s'", $strid);
+  $result = db_query("SELECT * FROM {i18n_locale} WHERE strid = '%s'", $strid);
   while ($str = db_fetch_object($result)) {
     $strings[$str->locale] = $str->text;
   }
@@ -153,8 +153,7 @@ function i18nstrings_get_string($strid, $language = FALSE, $default = NULL, $ref
  * locale_refresh_cache() is a quite expensive operation.
  */
 function i18nstrings_save_string($strid, $string) {
-  // drupal_set_message("DEBUG: i18n_strings_save: $strid = $string");
-  
+ 
   // This will store the string sources to update or create at the end
   if ($source = _i18nstrings_get_source($string, $strid)) {
     if (!$source->strid) {

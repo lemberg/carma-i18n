@@ -2,6 +2,8 @@
 
 5-x-3-x-dev to .........
 ---------------------
+- Backported mixed selection from 6.x, renamed 'preferred' to 'mixed'
+- Updated some wrong table names (i18n_strings)
 - Wrapped functions with conditional function_exists so they can be overridden
 - Added new 'preferred' language selection option, by ablivio, #203798
 

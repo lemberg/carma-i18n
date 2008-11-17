@@ -684,8 +684,7 @@ function _i18n_selection_mode(){
   return array(
     // Emphasize the first 2 ones, will be the most preferred.
     'simple' => '<strong>'.t('Current language and no language').'</strong>',
-    'preferred' => '<strong>'.t('Current language (if available) or default language, and no language').'</strong>',
-    'mixed' => t('Current language, default language, and no language'),
+    'mixed' => '<strong>'.t('Current language (if available) or default language, and no language').'</strong>',
     'default' => t('Only default language and no language'),    
     'strict' => t('Only current language'),
     'off' => t('All content. No language conditions apply'),    
@@ -790,10 +789,13 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
       
       $result['join'] = "LEFT JOIN {i18n_node} i18n ON $primary_table.nid = i18n.nid";
       
-      // For 'preferred mode' and nodes we need to join in an aditional table and apply special conditions
-      if ($mode == 'preferred') {
-        $result['join'] .= " LEFT JOIN {i18n_node} i18n2 ON i18n.trid = i18n2.trid AND i18n2.language = '".i18n_get_lang()."'";
-        $result['where'] = "i18n.nid IS NULL OR i18n.language ='".i18n_get_lang()."' OR (i18n.language ='".i18n_default_language()."' AND i18n2.nid IS NULL)" ;
+      // For 'mixed mode' and nodes we need to join in an aditional table and apply special conditions
+      if ($mode == 'mixed') {
+        $result['where'] = i18n_db_rewrite_where('i18n', 'simple');
+        if (i18n_get_lang() != i18n_default_language()) {
+          $result['join'] .= " LEFT JOIN {i18n_node} i18n2 ON i18n.trid = i18n2.trid AND i18n2.language = '".i18n_get_lang()."'";
+          $result['where'] .= " OR (i18n.language = '". i18n_default_language() ."' AND i18n2.nid IS NULL)";
+        }
       } else {
         $result['where'] = i18n_db_rewrite_where('i18n', $mode);
       }
@@ -820,19 +822,27 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key){
  * Rewrites queries depending on rewriting mode
  */
 function i18n_db_rewrite_where($alias, $mode){
+  // Get languages to simplify query building.
+  $current = i18n_get_lang();
+  $default = i18n_default_language();
+  
+  // If mode is mixed but current = default, it is the same as 'simple'.
+  if ($mode == 'mixed' && $current == $default) {
+    $mode = 'simple';
+  }
+
   switch($mode){
     case 'simple':
-      return "$alias.language ='".i18n_get_lang()."' OR $alias.language ='' OR $alias.language IS NULL" ;
-    case 'mixed':
-    case 'preferred': // Preferred mode for objects different to nodes is like 'mixed'
-      return "$alias.language ='".i18n_get_lang()."' OR $alias.language ='".i18n_default_language()."' OR $alias.language ='' OR $alias.language IS NULL" ;
+      return "$alias.language ='$current' OR $alias.language ='' OR $alias.language IS NULL" ;
+    case 'mixed': // This will be only for objects other than nodes
+      return "$alias.language = '$current' OR $alias.language = '$default' OR $alias.language = '' OR $alias.language IS NULL";
     case 'strict':
-      return "$alias.language ='".i18n_get_lang()."'" ;
+      return "$alias.language ='$current'" ;
     case 'node':
     case 'translation':
       return "$alias.language ='".i18n_selection_mode('params')."' OR $alias.language ='' OR $alias.language IS NULL" ;
     case 'default':
-      return "$alias.language ='".i18n_default_language()."' OR $alias.language ='' OR $alias.language IS NULL" ;
+      return "$alias.language ='$default' OR $alias.language ='' OR $alias.language IS NULL" ;
     case 'custom':
       return str_replace('%alias', $alias, i18n_selection_mode('params'));
   }  
