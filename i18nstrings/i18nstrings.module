@@ -283,11 +283,12 @@ function i18nstrings_tt($strid, $default, $language = NULL, $update = FALSE) {
   } else {
     // We get the full source object to add it to l10n list, if not existing it will be created, so we get an lid
     $source = i18nstrings_get_string($strid, $language, $default);
+    
     if (!empty($source->translation)) {
       $l10n_client_strings[$default] = $source;
       return $source->translation;
     } else {
-      $l10n_client_strings[$default] = $source;
+      $l10n_client_strings[$default] = !empty($source) ? $source : TRUE;
       return $default;
     }
   }
