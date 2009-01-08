@@ -515,15 +515,19 @@ function translation_admin_nodes() {
   $params = $filter['args'];
   $join = $filter['join'];
   
+  // Now we add in conditions from the node admin filter subform
   $filter = node_build_filter_query();
-  // Remove WHERE 
-  if($filter['where']) {
-  	$where += array(str_replace('WHERE', '', $filter['where']));
+
+  // Remove WHERE and merge all conditions. The WHERE part from node filter was a string with 'WHERE..'
+  if (!empty($filter['where'])) {
+    $where += array_merge($where, array(str_replace('WHERE', '', $filter['where'])));
   }
-
-  $params = array_merge($params, $filter['args']);
-
-  $join .= $filter['join'];
+  if (!empty($filter['args'])) {
+    $params = array_merge($params, $filter['args']);
+  }
+  if (!empty($filter['join'])) {
+    $join .= ' ' . $filter['join'];
+  }
   
   $sql = "SELECT n.nid, n.type, n.title, n.status, u.name, u.uid, i.language, i2.nid AS translation_nid, i2.status AS translation_status ".
     "FROM {node} n INNER JOIN {users} u ON n.uid = u.uid INNER JOIN {i18n_node} i ON n.nid = i.nid ".
