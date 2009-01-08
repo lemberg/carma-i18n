@@ -515,24 +515,26 @@ function translation_admin_nodes() {
   $params = $filter['args'];
   $join = $filter['join'];
   
+  // Now we add in conditions from the node admin filter subform
   $filter = node_build_filter_query();
-  // Remove WHERE 
-  if($filter['where']) {
-  	$where += array(str_replace('WHERE', '', $filter['where']));
+
+  // Remove WHERE and merge all conditions. The WHERE part from node filter was a string with 'WHERE..'
+  if (!empty($filter['where'])) {
+  	$where += array_merge($where, array(str_replace('WHERE', '', $filter['where'])));
   }
-
-  $params = array_merge($params, $filter['args']);
-
-  $join .= $filter['join'];
+  if (!empty($filter['args'])) {
+    $params = array_merge($params, $filter['args']);
+  }
+  if (!empty($filter['join'])) {
+    $join .= ' ' . $filter['join'];
+  }
   
   $sql = "SELECT n.nid, n.type, n.title, n.status, u.name, u.uid, i.language, i2.nid AS translation_nid, i2.status AS translation_status ".
     "FROM {node} n INNER JOIN {users} u ON n.uid = u.uid INNER JOIN {i18n_node} i ON n.nid = i.nid ".
     "LEFT JOIN {i18n_node} i2 ON i.trid = i2.trid AND 0 <> i2.trid AND i.language <> i2.language $join".
     (count($where) ? ' WHERE '.implode(' AND ', $where) : '');
- 
-  // Fetch data
-  //drupal_set_message("DEBUG:query: $sql");
-  //drupal_set_message("DEBUG:params: ".implode(', ', $params));
+
+  // Fetch data. Temporarily disable language query rewriting before
   i18n_selection_mode('off');
   $result = pager_query(db_rewrite_sql($sql), 50, 0, NULL, $params);
   i18n_selection_mode('reset');
@@ -617,6 +619,7 @@ function translation_filter_form($defaults = array()) {
   $form['_defaults'] = array('#type' => 'value', '#value' => $defaults);
   $form['filters'] = array('#type' => 'fieldset',
     '#title' => t('And translation conditions are'),
+    '#theme' => 'translation_filter_form_layout',
   );
   $languages = i18n_supported_languages();
   // Translation and language conditions
@@ -630,19 +633,26 @@ function translation_filter_form($defaults = array()) {
   $form['filters']['translation_status'] = array('#type' => 'select', '#title' => t('translation status'),
     '#options' => array('' => '') + _translation_status(), '#default_value' => $session['translation_status']);
   $form['filters']['buttons']['submit'] = array('#type' => 'submit', '#value' =>  t('Filter'));
-  if (count($session)) {
+  
+  if (!empty($session)) {
     $form['filters']['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset'));
   }
   return $form;
 }
 
-function theme_translation_filter_form($form) {
-	$form['filters']['source_language']['#prefix'] = '<table><tr><td>';
-  $form['filters']['source_status']['#suffix'] = '</td><td>';
-  $form['filters']['buttons']['#prefix'] = '</td><td>';
-  $form['filters']['buttons']['#suffix'] = '</td></tr></table>';
-  return drupal_render($form);
+// Quick and dirty way to get some form layout
+function theme_translation_filter_form_layout($form) {
+  $output = '<table><tr>';
+  $output .= '<td>' . drupal_render($form['source_language']) . '</td>';
+  $output .= '<td>' . drupal_render($form['translation_language']) . '</td>';
+  $output .= '</tr><tr>';
+  $output .= '<td>' . drupal_render($form['source_status']) . '</td>';
+  $output .= '<td>' . drupal_render($form['translation_status']) . '</td>';
+  $output .= '</tr><table>';
+  $output .= drupal_render($form);
+  return $output;
 }
+
 /**
  * Builds translation admin filters
  */
@@ -653,8 +663,8 @@ function translation_filter_form_submit($form_id, $form_values) {
   switch ($op) {
     case t('Filter'):
       $session = array();
-      foreach($form_values as $name => $value) {
-      	if($value) $session[$name] = $value;
+      foreach ($form_values as $name => $value) {
+      	if ($value) $session[$name] = $value;
       }
       break;
     case t('Reset'):
