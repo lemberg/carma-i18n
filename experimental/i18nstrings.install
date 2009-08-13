@@ -21,10 +21,12 @@ CREATE TABLE  {i18n_locale_strings} (
 
 /**
  * Change table name for smooth 6.x update:
+ *
+ * #395598: i18nstrings_update_1 failed - try the rename again.
  */
-function i18nstrings_update_1() {
+function i18nstrings_update_5200() {
   $ret = array();
-  $ret[] = update_sql("RENAME TABLE {i18n_strings} TO {i18n_locale_strings}");
+  $ret[] = update_sql("RENAME TABLE {i18n_locale_strings} TO {i18n_strings}");
   return $ret;
 }
 
