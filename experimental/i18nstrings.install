@@ -11,7 +11,7 @@ CREATE TABLE  {i18n_locale_strings} (
   `locale` varchar(12) NOT NULL,
   `text` text NOT NULL,
   PRIMARY KEY  (`strid`,`locale`)
-)  /*!40100 DEFAULT CHARACTER SET UTF8 */ 
+)  /*!40100 DEFAULT CHARACTER SET UTF8 */
 ");
       break;
     default:
@@ -24,15 +24,17 @@ CREATE TABLE  {i18n_locale_strings} (
  *
  * #395598: i18nstrings_update_1 failed - try the rename again.
  */
+/*
 function i18nstrings_update_5200() {
   $ret = array();
   $ret[] = update_sql("RENAME TABLE {i18n_locale_strings} TO {i18n_strings}");
   return $ret;
 }
+*/
 
 /**
  * Implementation of hook_uninstall().
  */
 function i18nstrings_uninstall() {
-  db_query('DROP TABLE {i18n_locale_strings}');  
+  db_query('DROP TABLE {i18n_locale_strings}');
 }
