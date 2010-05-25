@@ -1,5 +1,9 @@
 // $Id$
 
+5.x-2.4 to ........
+--------------------
+- Fixed: translation node_nid and term_tid SQL improperly handles 0, by douggreen, #286758
+
 5-x-2-3 to 5-x-2-4
 ---------------------
 - Fixed database compatibility issue with i18ncontent query by omo, #135387
