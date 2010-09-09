@@ -516,7 +516,7 @@ function i18ntaxonomy_form_all_localize(&$item) {
         if ($tree && (count($tree) > 0)) {
           foreach ($tree as $term) {
             if (isset($options[$vname][$term->tid])) {
-              $options[$vname][$term->tid] = str_repeat('-', $term->depth) . i18n_taxonomy_translate_term_name($term->tid, $term->name);
+              $options[$vname][$term->tid] = str_repeat('-', $term->depth) . i18ntaxonomy_translate_term_name($term->tid, $term->name);
             }
           }
         }

@@ -2,6 +2,8 @@
 
 6.x-1.6 to 6.x-1.7
 ------------------
+- Fixed: Missing function i18n_taxonomy_translate_term_name(), by srobert72, #870366
+- Fixed: Parameter 1 to menu_nodeapi() expected to be a reference (php5.3), by setvik, #886700
 - Fixed: Multilingual variables cache being rebuilt every page load, by patrick2000, #905428
 - Improved variable api, added i18n_variable(), extended i18n_variable_del()
 - Improved variable settings, variables for default language are now set to main table
