@@ -1,7 +1,13 @@
 // $Id$
 
+6.x-1.6 to 6.x-1.7
+------------------
+- Fixed: Multilingual variables cache being rebuilt every page load, by patrick2000, #905428
+- Improved variable api, added i18n_variable(), extended i18n_variable_del()
+- Improved variable settings, variables for default language are now set to main table
+
 6.x-1.5 to 6.x-1.6
------------------
+------------------
 - Fixed: issues with i18nvariables, do not check anymore i18n_variables on initialization, by Jose, #850708
 - Fixed: Menu item's language is lost after node update, by neochief, #514630
 - Fixed: PHP notices, by eMPee584, #769318
