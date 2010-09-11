@@ -1,5 +1,9 @@
 // $Id$
 
+6.x-1.7 to .......
+------------------
+- Added page overview for multilingual variables, help clean up of leftover values, #905428
+
 6.x-1.6 to 6.x-1.7
 ------------------
 - Fixed: Missing function i18n_taxonomy_translate_term_name(), by srobert72, #870366
