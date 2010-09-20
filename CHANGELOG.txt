@@ -2,6 +2,7 @@
 
 6.x-1.7 to .......
 ------------------
+- Renamed locales_target 'status' field to i18n_status, for compatibility with other modules, #857442
 - Added page overview for multilingual variables, help clean up of leftover values, #905428
 
 6.x-1.6 to 6.x-1.7
