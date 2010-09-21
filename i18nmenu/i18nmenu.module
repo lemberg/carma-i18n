@@ -29,10 +29,12 @@ function i18nmenu_locale($op = 'groups', $group = NULL) {
 function i18nmenu_locale_refresh() {
   // Rebuild menus to ensure all items are altered in i18nmenu_menu_link_alter().
   menu_rebuild();
+  i18n_selection_mode('off');
   foreach (menu_get_menus() as $name => $title) {
     $tree = menu_tree_all_data($name);
     i18nmenu_localize_tree($tree, TRUE);
   }
+  i18n_selection_mode('reset');
   return TRUE; // Meaning it completed with no issues
 }
 
