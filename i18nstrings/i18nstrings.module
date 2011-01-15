@@ -763,7 +763,7 @@ function i18nstrings_context($context, $string = NULL, $format = 0) {
     $context->textgroup = array_shift($parts);
     $context->type = array_shift($parts);
     $context->objectid = $parts ? array_shift($parts) : '';
-    // Ramaining elements glued again with ':'
+    // Remaining elements glued again with ':'
     $context->property = $parts ? implode(':', $parts) : '';
     $context->format = $format;
     $context->location = i18nstrings_location($context);
