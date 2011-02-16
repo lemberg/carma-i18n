@@ -2,6 +2,7 @@
 
 6.x-1.7 to .......
 ------------------
+- Replaced obsoleted 'split' function by 'explode' (PHP 5.3), #871706
 - Renamed locales_target 'status' field to i18n_status, for compatibility with other modules, #857442
 - Added page overview for multilingual variables, help clean up of leftover values, #905428
 
