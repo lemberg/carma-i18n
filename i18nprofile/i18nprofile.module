@@ -200,7 +200,7 @@ function i18nprofile_form_translate_field(&$form, $field) {
   }
   
   if (!empty($form[$field]['#description'])) {
-    $form[$field]['#description'] = i18nstrings("profile:field:$field:description", $form[$field]['#description']);
+    $form[$field]['#description'] = i18nstrings("profile:field:$field:explanation", $form[$field]['#description']);
   }
   if (!empty($form[$field]['#options'])) {
     if ($options = i18nprofile_field_options($field, $form[$field]['#options'])) {

@@ -379,8 +379,6 @@ function i18nmenu_form_alter(&$form, &$form_state, $form_id) {
     $node = $form['#node'];
 
     if (!empty($form['menu'])) {
-      // Set menu language to node language.
-      $form['menu']['language'] = array('#type' => 'value', '#value' => $node->language);
       // Customized must be set to 1 to save language.
       $form['menu']['customized'] = array('#type' => 'value', '#value' => 1);
     }
@@ -424,6 +422,12 @@ function i18nmenu_form_alter(&$form, &$form_state, $form_id) {
  */
 function i18nmenu_nodeapi(&$node, $op) {
   switch ($op) {
+    case 'presave':
+      // Ensure that the menu item language always matches node language.
+      if (isset($node->menu) && isset($node->language)) {
+        $node->menu['language'] = $node->language;
+      }
+      break;
     case 'insert':
     case 'update':
       if (isset($node->menu)) {
