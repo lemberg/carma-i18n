@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Internationalization (i18n) module
