@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Conditional definition of conf_url_rewrite
