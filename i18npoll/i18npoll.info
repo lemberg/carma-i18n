@@ -1,4 +1,3 @@
-; $Id$
 name = Poll aggregate
 description = Aggregates poll results for all translations.
 dependencies[] = translation

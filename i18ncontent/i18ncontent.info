@@ -1,4 +1,3 @@
-; $Id$
 name = Content type translation
 description = Add multilingual options for content and translate related strings: name, description, help text...
 dependencies[] = i18nstrings

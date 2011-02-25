@@ -1,4 +1,3 @@
-# $Id$
 #
 # LANGUAGE translation of Drupal (i18ntaxonomy)
 # Copyright YEAR NAME <EMAIL@ADDRESS>

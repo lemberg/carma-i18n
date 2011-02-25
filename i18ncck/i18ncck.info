@@ -1,4 +1,3 @@
-; $Id$
 name = CCK translation
 description = Supports translatable custom CCK fields and fieldgroups.
 dependencies[] = i18n

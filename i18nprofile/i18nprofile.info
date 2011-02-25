@@ -1,4 +1,3 @@
-; $Id$
 name = Profile translation
 description = Enables multilingual profile fields.
 dependencies[] = profile

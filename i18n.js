@@ -1,4 +1,3 @@
-// $Id$
 
 /**
  * Rewrite autocomplete inputs to pass the language of the node currently being
