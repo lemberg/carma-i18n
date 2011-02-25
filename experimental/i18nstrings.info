@@ -1,4 +1,3 @@
-; $Id$
 name = Strings
 description = Translatable strings.
 dependencies = i18n
