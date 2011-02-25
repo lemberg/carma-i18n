@@ -1,4 +1,3 @@
-; $Id$
 name = Internationalization
 description = Enables multilingual content.
 dependencies = locale

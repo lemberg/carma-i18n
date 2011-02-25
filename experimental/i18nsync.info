@@ -1,4 +1,3 @@
-; $Id$
 name = Synchronization
 description = Synchronizes content translations
 dependencies = i18n translation
