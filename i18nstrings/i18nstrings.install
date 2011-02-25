@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 function i18nstrings_install() {
   // Create database tables

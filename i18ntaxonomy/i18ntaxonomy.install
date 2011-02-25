@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * Set language field in its own table
  * Do not drop node.language now, just in case

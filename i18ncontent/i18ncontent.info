@@ -1,4 +1,3 @@
-; $Id$
 name = Content Types
 description = Translates content type parameters.
 dependencies[] = i18n
