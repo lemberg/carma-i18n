@@ -599,6 +599,16 @@ function i18nstrings_remove_string($context, $string = NULL) {
 }
 
 /**
+ * Remove a string translation for a given context and language.
+ */
+function i18nstrings_remove_translation($context, $langcode) {
+  $context = i18nstrings_context($context);
+  if ($source = i18nstrings_get_source($context)) {
+    db_query("DELETE FROM {locales_target} WHERE lid = %d AND language = '%s'", $source->lid, $langcode);
+  }
+}
+
+/**
  * Update context for strings.
  *
  * As some string locations depend on configurable values, the field needs sometimes to be updated
