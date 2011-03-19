@@ -33,7 +33,7 @@ function i18ncontent_help($path, $arg) {
     $type = str_replace('-', '_', $arg[2]);
     // Fetch default language node type help
     $source = i18ncontent_node_help_source($type);
-    if ($help = i18nstrings("nodetype:type:$type:help", $source->source)) {
+    if (isset($source->source) && ($help = i18nstrings("nodetype:type:$type:help", $source->source))) {
       return '<p>'. filter_xss_admin($help) .'</p>';
     }
   }
