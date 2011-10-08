@@ -60,7 +60,9 @@ function i18ncontent_locale_refresh() {
   foreach (node_get_types() as $type) {
     i18nstrings_update("nodetype:type:$type->type:name", $type->name);
     i18nstrings_update("nodetype:type:$type->type:title", $type->title_label);
-    i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
+    if (isset($type->body_label)) {
+      i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
+    }
     i18nstrings_update("nodetype:type:$type->type:description", $type->description);
     if ($type->help) {
       i18nstrings_ts("nodetype:type:$type->type:help", $type->help, NULL, TRUE);
