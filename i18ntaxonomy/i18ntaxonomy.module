@@ -966,6 +966,12 @@ function i18ntaxonomy_get_tree($vid, $lang, $parent = 0, $depth = -1, $max_depth
 function i18ntaxonomy_token_values($type, $object = NULL, $options = array()) {
   $values = array();
   switch ($type) {
+    case 'taxonomy':
+      $term = $object;
+      $values['i18n-term-raw'] = i18nstrings("taxonomy:term:$term->tid:name", $term->name);
+      $values['i18n-term'] = check_plain(i18nstrings("taxonomy:term:$term->tid:name", $term->name));
+      break;
+
     case 'node':
       $node = $object;
       // This code is copied from the token module which i adapting
@@ -1028,7 +1034,7 @@ function i18ntaxonomy_token_values($type, $object = NULL, $options = array()) {
  * Implementation of hook_token_list().
  */
 function i18ntaxonomy_token_list($type = 'all') {
-  if ($type == 'node' || $type == 'all') {
+  if ($type == 'node' || $type == 'all' || $type == 'taxonomy') {
     $tokens['i18ntaxonomy']['i18n-term-raw'] = t("Unescaped term name translated using i18n");
     $tokens['i18ntaxonomy']['i18n-term'] = t("Escaped term name translated using i18n");
     return $tokens;
