@@ -86,7 +86,9 @@ function i18ncontent_form_alter(&$form, $form_state, $form_id) {
         // Fetch default language node type help
         $source = i18ncontent_node_help_source($type);
         // We dont need to pass the value through i18nstrings_ts()
-        $form['submission']['help']['#default_value'] = $source->source;
+    		if (isset($source->source)) {
+    			$form['submission']['help']['#default_value'] = $source->source;
+    		}
       }
       break;
 
