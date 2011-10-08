@@ -157,15 +157,16 @@ function i18ncontent_node_type($op, $info) {
 function i18ncontent_menu_alter(&$menu) {
   $menu['node/add']['page callback'] =  'i18ncontent_node_add_page';
   if (variable_get('page_manager_node_edit_disabled', TRUE)) {
-    // @TODO avoid iterating over every router path.
-    foreach ($menu as $path => $item) {
-      if (!empty($item['page callback']) && $item['page callback'] == 'node_add') {
+    // Replace node/add/* menu items
+    foreach (node_get_types('types', NULL, TRUE) as $type) {
+      $type_url_str = str_replace('_', '-', $type->type);
+      $path = 'node/add/' . $type_url_str;
+      if (!empty($menu[$path]['page callback']) && $menu[$path]['page callback'] == 'node_add') {
         $menu[$path]['page callback'] = 'i18ncontent_node_add';
-        $arg = arg(NULL, $path);
         $menu[$path]['title callback'] = 'i18nstrings_title_callback';
-        $menu[$path]['title arguments'] = array('nodetype:type:'. $arg[2] .':name', $item['title']);
-      }
-    }
+        $menu[$path]['title arguments'] = array('nodetype:type:'. $type->type .':name', $type->name);
+       }
+     }
   }
 }
 
