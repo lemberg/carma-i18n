@@ -581,10 +581,11 @@ function _i18n_menu_link_localizable_properties($link) {
   $props = array();
   $router = !empty($link['router_path']) ? _i18n_menu_get_router($link['router_path']) : NULL;
   if (!empty($link['link_title'])) {
-    // If the title callback is 't' and the link title matches the router title
-    // it will be localized by core, not by i18n_menu.
+    // If this isn't a customized link and the title callback is 't' and the
+    // link title matches the router title it will be localized by core, not by
+    // i18n_menu.
     if (!$router ||
-        (empty($router['title_callback']) || $router['title_callback'] != 't') ||
+        (empty($router['title_callback']) || ($router['title_callback'] != 't' || !empty($link['customized']))) ||
         (empty($router['title']) || $router['title'] != $link['link_title'])
     ) {
       $props[] = 'title';
